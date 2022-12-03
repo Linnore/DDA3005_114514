@@ -23,6 +23,7 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     if m < n:
         flag_T = True
         A = A.T
+        m, n = A.shape
 
     i = 0
     Qt = HouseHolder(A[:, 0])
@@ -50,9 +51,10 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 
     if flag_T:
         B = A.T
+        return B, P.T, Qt.T
     else:
         B = A
-    return B, Qt, P
+        return B, Qt, P
 
 
 def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigenTest=False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
