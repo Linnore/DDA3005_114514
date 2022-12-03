@@ -35,10 +35,10 @@ def qr_tridiagonal(T: np.ndarray, **arg) -> tuple[np.ndarray, np.ndarray]:
         # Givens rotation
         tmp = c*X[i] + s*X[i+1]
         X[i+1] = c*X[i+1] - s*X[i]
-        X[i] = tmp.copy()
+        X[i] = tmp
         tmp = c*Qt[i] + s*Qt[i+1]
         Qt[i+1] = c*Qt[i+1] - s*Qt[i]
-        Qt[i] = tmp.copy()
+        Qt[i] = tmp
 
     return Qt.T, X
 
