@@ -24,22 +24,23 @@ def qr_tridiagonal(T: np.ndarray, **arg) -> tuple[np.ndarray, np.ndarray]:
         Q, R (np.ndarray, np.ndarray): The Q and R factors such that T = Q@R, where Q is an orthogonal 
         matrix and R is upper triangular.
     """
-    m, n = T.shape
+    X = np.array(T, dtype=float)
+    m, n = X.shape
     Qt = np.identity(m)
     for i in range(n-1):
-        ai = T[i, i]
-        ak = T[i+1, i]
+        ai = X[i, i]
+        ak = X[i+1, i]
         c = ai/(ai**2 + ak**2)**.5
         s = ak/(ai**2 + ak**2)**.5
         # Givens rotation
-        tmp = c*T[i] + s*T[i+1]
-        T[i+1] = c*T[i+1] - s*T[i]
-        T[i] = tmp.copy()
+        tmp = c*X[i] + s*X[i+1]
+        X[i+1] = c*X[i+1] - s*X[i]
+        X[i] = tmp.copy()
         tmp = c*Qt[i] + s*Qt[i+1]
         Qt[i+1] = c*Qt[i+1] - s*Qt[i]
         Qt[i] = tmp.copy()
 
-    return Qt.T, T
+    return Qt.T, X
 
 
 def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-15, maxn=1000) -> tuple[np.ndarray, np.ndarray]:
