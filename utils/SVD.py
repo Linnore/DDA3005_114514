@@ -3,9 +3,8 @@
 
 import numpy as np
 import scipy.linalg
-from HouseHolder import HouseHolder
-from QR import eigh_by_QR
-
+from .HouseHolder import HouseHolder
+from .QR import eigh_by_QR
 
 
 def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -83,3 +82,11 @@ def svd(A: np.ndarray, phaseII=svd_phaseIIA, eigenTest=False) -> tuple[np.ndarra
     B, Q, P = svd_phaseI(A)
     return phaseII(B, Q, P, eigenTest=eigenTest)
 
+
+if __name__ == "__main__":
+    A = np.array([[1, 0, 1],
+                  [2, 5**.5, 0],
+                  [0, 0, 1],
+                  [0, 0, 1]])
+    B, Qt, P = svd_phaseI(A)
+    print(B)
