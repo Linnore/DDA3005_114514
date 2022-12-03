@@ -45,7 +45,7 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         B (np.ndarray): The bidiagonalized version of A, with dimension min(m,n) x min(m, n).
         Qt (np.ndarray), and P (np.ndarray): The two transformation matrices such that B = Qt @ A @ P
     """
-    B = np.array(A.shape)
+    B = np.zeros(A.shape)
     m, n = A.shape
     flag_T = False
     if m < n:
@@ -71,14 +71,15 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         Qt[i:, :] = Qit @ Qt[i:, :]
         P[:, i+1:] = P[:, i+1:] @ Pi
 
+    i = n-1
+    Qit = HouseHolder(A[i:, i])
+    A[i:, i:] = Qit @ A[i:, i:]
+    Qt[i:, :] = Qit @ Qt[i:, :]
+
     if flag_T:
-        B = A.T[:m, :m]
-        Qt = Qt[:m, :m]
-        P = P[:m, :m]
+        B = A.T
     else:
-        B = A[:n, :n]
-        Qt = Qt[:n, :n]
-        P = P[:n, :n]
+        B = A
     return B, Qt, P
 
 
@@ -92,6 +93,21 @@ def Wilkinson_Shift(A: np.ndarray) -> int:
     e1 = T/2 + (T**2/4 - D)**.5
     e2 = T/2 - (T**2/4 - D)**.5
     return e1 if abs(e1-A[-1, -1]) < abs(e2-A[-1, -1]) else e2
+
+
+def qr_tridiagonal(T: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """This function provide an efficient QR factorization for tridiagonal matrices using Givens Rotation.
+
+    Args:
+        T (np.ndarray): The tridiagonal matrix of interest.
+
+    Returns:
+        Q, R (np.ndarray, np.ndarray): The Q and R factors such that T = Q@R, where Q is an orthogonal 
+        matrix and R is upper triangular.
+    """
+    Q = R = np.ndarray
+
+    return Q, R
 
 
 def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=scipy.linalg.qr, tol=1e-16, maxn=1000) -> tuple[np.ndarray, np.ndarray]:
@@ -133,7 +149,16 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=scipy.linalg.qr, tol=1e-
     return T[idx], Q[:, idx]
 
 
-def svd_phaseIIA(B: np.ndarray, Q: np.ndarray, P: np.ndarray, eigenTest=False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigenTest=False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+    # Discard the zero rows or columns
+    m, n = B.shape
+    if (m > n):
+        B = B[:n, :]
+        Qt = Qt[:n, :]
+    elif (m < n):
+        B = B[:, :m]
+        P = P[:, :m]
 
     if eigenTest:
         T, S = scipy.linalg.eigh(B.T@B)
@@ -142,8 +167,8 @@ def svd_phaseIIA(B: np.ndarray, Q: np.ndarray, P: np.ndarray, eigenTest=False) -
         T, S = eigh_by_QR(B.T@B)
         T, G = eigh_by_QR(B@B.T)
 
-    U = G.T @ Q.T
-    Vt = P @ S
+    U = Qt.T @ G
+    Vt = S.T @ P.T
     return U, T**.5, Vt
 
 
