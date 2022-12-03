@@ -51,7 +51,7 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-1
         A (np.ndarray): The matrix of interest. Note that it must be real and symmetrix.
         shift (function): Given the matrix A, shift(A) return an estimate of one eigenvalue as the shift.
         qr (function): An QR decomposition function qr(A) that returns Q and R factors given a matrix A. Defaults to scipy.linalg.qr.
-        tol (float, optional): The torlerence for each defletion step. Defaults to 1e-16.
+        tol (float, optional): The torlerence for each defletion step. Defaults to 1e-15.
         maxn (int, optional): Maximum iterations at each defletion step. Defaults to 1000.
 
     Returns:
