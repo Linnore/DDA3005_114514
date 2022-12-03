@@ -1,6 +1,6 @@
 import numpy as np
-import scipy
 from scipy.linalg import norm
+
 
 def Rayleigh_Quotient_Shift(A: np.ndarray) -> int:
     return A[-1, -1]
@@ -14,7 +14,7 @@ def Wilkinson_Shift(A: np.ndarray) -> int:
     return e1 if abs(e1-A[-1, -1]) < abs(e2-A[-1, -1]) else e2
 
 
-def qr_tridiagonal(T: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def qr_tridiagonal(T: np.ndarray, **arg) -> tuple[np.ndarray, np.ndarray]:
     """This function provide an efficient QR factorization for tridiagonal matrices using Givens Rotation.
 
     Args:
@@ -24,17 +24,32 @@ def qr_tridiagonal(T: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         Q, R (np.ndarray, np.ndarray): The Q and R factors such that T = Q@R, where Q is an orthogonal 
         matrix and R is upper triangular.
     """
-    Q = R = np.ndarray
+    m, n = T.shape
+    Qt = np.identity(m)
+    for i in range(n-1):
+        ai = T[i, i]
+        ak = T[i+1, i]
+        c = ai/(ai**2 + ak**2)**.5
+        s = ak/(ai**2 + ak**2)**.5
+        # Givens rotation
+        tmp = c*T[i] + s*T[i+1]
+        T[i+1] = c*T[i+1] - s*T[i]
+        T[i] = tmp.copy()
+        tmp = c*Qt[i] + s*Qt[i+1]
+        Qt[i+1] = c*Qt[i+1] - s*Qt[i]
+        Qt[i] = tmp.copy()
 
-    return Q, R
+    return Qt.T, T
 
-def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=scipy.linalg.qr, tol=1e-16, maxn=1000) -> tuple[np.ndarray, np.ndarray]:
+
+def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-15, maxn=1000) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the QR algorithm with deflation on the symmetric matrix A 
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
 
     Args:
         A (np.ndarray): The matrix of interest. Note that it must be real and symmetrix.
+        shift (function): Given the matrix A, shift(A) return an estimate of one eigenvalue as the shift.
         qr (function): An QR decomposition function qr(A) that returns Q and R factors given a matrix A. Defaults to scipy.linalg.qr.
         tol (float, optional): The torlerence for each defletion step. Defaults to 1e-16.
         maxn (int, optional): Maximum iterations at each defletion step. Defaults to 1000.

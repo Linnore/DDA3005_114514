@@ -4,7 +4,7 @@
 import numpy as np
 import scipy.linalg
 from .HouseHolder import HouseHolder
-from .QR import eigh_by_QR
+from .QR import *
 
 
 def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def HouseHolder(a: np.ndarray) -> np.ndarray:
     """This function implement the HouseHolder transformation on a given vector 'a'.
 
