@@ -18,23 +18,19 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         Qt (np.ndarray), and P (np.ndarray): The two transformation matrices such that B = Qt @ A @ P
     """
     m, n = A.shape
-    flag_T = False
-    if m < n:
-        flag_T = True
-        A = A.T
-        m, n = A.shape
 
     B = A.copy()
     i = 0
     Qt = HouseHolder(B[:, 0])
     B = Qt @ B
 
+    r = min(m, n)
     P = np.zeros((n, n))
     P[0, 0] = 1
     P[1:, 1:] = HouseHolder(B[0, 1:].T)
     B[:, 1:] = B[:, 1:] @ P[1:, 1:]
 
-    for i in range(1, n-1):
+    for i in range(1, r-1):
         Qit = HouseHolder(B[i:, i])
         B[i:, i:] = Qit @ B[i:, i:]
 
@@ -44,16 +40,12 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         Qt[i:, :] = Qit @ Qt[i:, :]
         P[:, i+1:] = P[:, i+1:] @ Pi
 
-    i = n-1
+    i = r-1
     Qit = HouseHolder(B[i:, i])
     B[i:, i:] = Qit @ B[i:, i:]
     Qt[i:, :] = Qit @ Qt[i:, :]
 
-    if flag_T:
-        B = B.T
-        return B, P.T, Qt.T
-    else:
-        return B, Qt, P
+    return B, Qt, P
 
 
 def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -69,6 +61,8 @@ def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR)
 
     Returns:
         U (np.ndarray): The matrix containing left singular vectors of A as columns 
+        S (np.ndarray): An 1d array containing the singular values in descending order.
+        Vt (np.ndarray): The transepose of the matrix containing right singular vectors of A as columns.
     """
 
     # Discard the zero rows or columns

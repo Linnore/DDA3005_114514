@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def HouseHolder(a: np.ndarray) -> np.ndarray:
+def HouseHolder(a: np.ndarray, tol=1e-16) -> np.ndarray:
     """This function implement the HouseHolder transformation on a given vector 'a'.
 
     Args:
@@ -12,6 +12,10 @@ def HouseHolder(a: np.ndarray) -> np.ndarray:
     """
     alpha = np.linalg.norm(a)
     n = a.shape[0]
+    if abs(alpha) < tol:
+        # todo: permutation
+        return np.identity(n)
+
 
     # To minuate cancellation effects
     if (a[0] > 0):
