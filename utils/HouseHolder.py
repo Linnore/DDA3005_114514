@@ -12,10 +12,8 @@ def HouseHolder(a: np.ndarray, tol=1e-15) -> np.ndarray:
     """
     alpha = np.linalg.norm(a)
     n = a.shape[0]
-    # if abs(alpha) < tol:
-    #     # todo: permutation
-    #     return np.identity(n)
-
+    if abs(alpha) < tol:
+        return np.identity(n)
 
     # To minuate cancellation effects
     if (a[0] > 0):

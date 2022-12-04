@@ -2,7 +2,6 @@
 """
 
 import numpy as np
-import scipy.linalg
 from .HouseHolder import HouseHolder
 from .QR import *
 
@@ -18,33 +17,6 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         Qt (np.ndarray), and P (np.ndarray): The two transformation matrices such that B = Qt @ A @ P
     """
     m, n = A.shape
-
-    # Naive way:
-    # B = A.copy()
-    # Qt = np.identity(m)
-    # P = np.identity(n)
-
-    # r = min(m, n)
-    # for i in range(r-1):
-    #     Qit = np.identity(m)
-    #     Qit[i:, i:] = HouseHolder(B[i:, i])
-    #     B = Qit @ B
-
-    #     Pi = np.identity(n)
-    #     Pi[i+1:, i+1: ] = HouseHolder(B[i, i+1:])
-    #     B = B @ Pi
-
-    #     Qt = Qit @ Qt
-    #     P = P @ Pi
-        
-    # if m>n:
-    #     i = n-1
-    #     Qit = np.identity(m)
-    #     Qit[i:, i:] = HouseHolder(B[i:, i])
-    #     B = Qit @ B
-    #     Qt = Qit @ Qt
-
-
     B = A.copy()
     i = 0
     Qt = HouseHolder(B[:, 0])
@@ -73,6 +45,25 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         Qt[i:, :] = Qit @ Qt[i:, :]
 
     return B, Qt, P
+
+
+def fastMult_upper_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
+    """This function exploit the struction of a bidiagonal matrix to compute A@B in O(n^2), where A
+    is a general matrix and B is the upper bidiagonal matrix.
+
+    Args:
+        A (np.ndarray): _description_
+        B (np.ndarray): _description_
+
+    Returns:
+        (np.ndarray): The product A@B
+    """
+    m, n = (A.shape[0], B.shape[-1])
+    result = np.zeros((m, n))
+    result[:, 0] = B[0, 0]*A[:, 0]
+    for i in range(1, n):
+        result[:, i] = B[i-1, i]*A[:, i-1] + B[i, i]*A[:, i]
+    return result
 
 
 def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR, tol=1e-15) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -107,13 +98,14 @@ def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR,
     # Eigen decomposition of B'@B = S @ T @ S'
     # Eigen decomposition of B@B' = G @ T @ G'
     T, G = eigen(B@B.T)
-    _, S = eigen(B.T@B)
-    # Todo: Save one eigen decomposition
-    # How to apple rowwise backward and forward substitution on singular B?
+    zero_idx = np.abs(T) > tol
+    sigma = T**.5
+    S = (fastMult_upper_bidiagonal(G.T, B))[zero_idx].T/sigma[zero_idx]
+    T = T[zero_idx]
+    G = G[:, zero_idx]
 
     U = Qt.T @ G
     Vt = S.T @ P.T
-    # T[np.abs(T) < tol] = 0
     return U, T**.5, Vt
 
 

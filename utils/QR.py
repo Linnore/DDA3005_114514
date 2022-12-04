@@ -30,8 +30,8 @@ def qr_tridiagonal(T: np.ndarray, tol=1e-15, **arg) -> tuple[np.ndarray, np.ndar
     for i in range(n-1):
         ai = X[i, i]
         ak = X[i+1, i]
-        # if abs(ai) < tol and abs(ak)<tol:
-        #     continue
+        if abs(ai) < tol and abs(ak) < tol:
+            continue
         c = ai/(ai**2 + ak**2)**.5
         s = ak/(ai**2 + ak**2)**.5
         # Givens rotation
@@ -82,7 +82,7 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-1
             T = np.append(T_hat, X[-1, -1])
             break
     if not ascending:
-        idx = np.argsort(T)[::-1][:n]   
+        idx = np.argsort(T)[::-1][:n]
     else:
-        idx = np.argsort(T)    
+        idx = np.argsort(T)
     return T[idx], Q[:, idx]
