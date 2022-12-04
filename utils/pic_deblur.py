@@ -51,19 +51,7 @@ def deblur_picture(blur_kernel_l,blur_kernel_r,blur_data,trunc):
         psnr.append(10*np.log10(m**2/norm_deblur**2))  
     return deblur_data,np.array(psnr).mean()
 
-def working_procee(size,name,power,trunc):
-    img_data = open_picture(size,name)
-    #plt.imshow(img_data)
-    blur_kernel_l,blur_kernel_r,blur_data = blur_picture(img_data,blur_type='tridiagonal',power_l=power,power_r=power)
-    begin = time.time()
-    deblur_data,psnr = deblur_picture(blur_kernel_l,blur_kernel_r,blur_data,trunc)
-    time_used = time.time()-begin
-    data = [img_data,blur_data,deblur_data]
-    kernel = [blur_kernel_l,blur_kernel_r]
-    return time_used,psnr,data,kernel
 
 def singular_drawing(matr):
     u,sigma,v = SVD.svd(matr)
     plt.plot(sigma)
-
-print(open_picture('a','a'))
