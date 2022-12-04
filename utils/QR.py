@@ -14,7 +14,7 @@ def Wilkinson_Shift(A: np.ndarray) -> int:
     return e1 if abs(e1-A[-1, -1]) < abs(e2-A[-1, -1]) else e2
 
 
-def qr_tridiagonal(T: np.ndarray, **arg) -> tuple[np.ndarray, np.ndarray]:
+def qr_tridiagonal(T: np.ndarray, tol=1e-15, **arg) -> tuple[np.ndarray, np.ndarray]:
     """This function provide an efficient QR factorization for tridiagonal matrices using Givens Rotation.
 
     Args:
@@ -30,6 +30,8 @@ def qr_tridiagonal(T: np.ndarray, **arg) -> tuple[np.ndarray, np.ndarray]:
     for i in range(n-1):
         ai = X[i, i]
         ak = X[i+1, i]
+        if abs(ai) < tol and abs(ak) < tol:
+            continue
         c = ai/(ai**2 + ak**2)**.5
         s = ak/(ai**2 + ak**2)**.5
         # Givens rotation
@@ -43,7 +45,7 @@ def qr_tridiagonal(T: np.ndarray, **arg) -> tuple[np.ndarray, np.ndarray]:
     return Qt.T, X
 
 
-def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-15, maxn=1000) -> tuple[np.ndarray, np.ndarray]:
+def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-15, maxn=1000, ascending=False) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the QR algorithm with deflation on the symmetric matrix A 
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
@@ -60,9 +62,9 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-1
         Q (np.ndarray): A 2d array (matrix) that contains the corresponding eigenvectors as columns.
     """
     n = A.shape[0]
+    X = A.copy()
     if n == 1:
-        return np.array([A[0, 0]]), np.array([[1]])
-    X = A
+        return np.array([X[0, 0]]), np.array([[1]])
     Q = np.identity(n)
     sigma = 0
     for k in range(maxn):
@@ -79,5 +81,8 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-1
             Q = Q@U
             T = np.append(T_hat, X[-1, -1])
             break
-    idx = np.argsort(T)[::-1][:n]
+    if not ascending:
+        idx = np.argsort(T)[::-1][:n]
+    else:
+        idx = np.argsort(T)
     return T[idx], Q[:, idx]
