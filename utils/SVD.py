@@ -67,7 +67,7 @@ def fastMult_upper_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     return result
 
 
-def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR, tol=1e-15) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR, tol=1e-13) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """This function implement the phaseII of SVD following the proposed procedure A in project description.
 
     Args:
@@ -99,15 +99,15 @@ def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR,
     # Eigen decomposition of B'@B = S @ T @ S'
     # Eigen decomposition of B@B' = G @ T @ G'
     T, G = eigen(B@B.T)
-    zero_idx = np.abs(T) > tol
+    nonzero_idx = np.abs(T) > tol
+    T = T[nonzero_idx]
+    G = G[:, nonzero_idx]
     sigma = T**.5
-    S = (fastMult_upper_bidiagonal(G.T, B))[zero_idx].T/sigma[zero_idx]
-    T = T[zero_idx]
-    G = G[:, zero_idx]
+    S = (fastMult_upper_bidiagonal(G.T, B)).T/sigma
 
     U = Qt.T @ G
     Vt = S.T @ P.T
-    return U, T**.5, Vt
+    return U, sigma, Vt
 
 
 def svd(A: np.ndarray, phaseII=svd_phaseIIA, eigen=eigh_by_QR) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
