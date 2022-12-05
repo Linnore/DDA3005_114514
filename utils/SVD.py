@@ -107,7 +107,7 @@ def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR,
         S = S[:, nonzero_idx]
         sigma = T**.5
         G = (fastMult_upper_bidiagonal(S.T, B.T)).T/sigma
-    elif m > n:
+    else:
         B = B[:n]
         Qt = Qt[:n]
         m = n
