@@ -18,6 +18,7 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         Qt (np.ndarray), and P (np.ndarray): The two transformation matrices such that B = Qt @ A @ P
     """
     m, n = A.shape
+    flipped = False
     if m < n:
         flipped = True
         m, n = n, m
