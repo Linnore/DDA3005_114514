@@ -18,7 +18,12 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         Qt (np.ndarray), and P (np.ndarray): The two transformation matrices such that B = Qt @ A @ P
     """
     m, n = A.shape
-    B = A.copy()
+    if m < n:
+        flipped = True
+        m, n = n, m
+        B = A.T.copy()
+    else:
+        B = A.copy()
     i = 0
     Qt = HouseHolder(B[:, 0])
     B = Qt @ B
@@ -29,7 +34,7 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     P[1:, 1:] = HouseHolder(B[0, 1:].T)
     B[:, 1:] = B[:, 1:] @ P[1:, 1:]
 
-    for i in range(1, r-1):
+    for i in range(1, r):
         Qit = HouseHolder(B[i:, i])
         B[i:, i:] = Qit @ B[i:, i:]
 
@@ -39,13 +44,15 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         Qt[i:, :] = Qit @ Qt[i:, :]
         P[:, i+1:] = P[:, i+1:] @ Pi
 
-    if m > n:
-        i = r-1
-        Qit = HouseHolder(B[i:, i])
-        B[i:, i:] = Qit @ B[i:, i:]
-        Qt[i:, :] = Qit @ Qt[i:, :]
+    i = r-1
+    Qit = HouseHolder(B[i:, i])
+    B[i:, i:] = Qit @ B[i:, i:]
+    Qt[i:, :] = Qit @ Qt[i:, :]
 
-    return B, Qt, P
+    if flipped:
+        return B.T, P.T, Qt.T
+    else:
+        return B, Qt, P
 
 
 def fastMult_upper_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
@@ -91,19 +98,26 @@ def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR,
         B = B[:, :m]
         P = P[:, :m]
         n = m
+        # Eigen decomposition of B'@B = S @ T @ S'
+        # B = GTS'  BS = GT   S'B' = TG
+        T, S = eigen(B.T@B)
+        nonzero_idx = np.abs(T) > tol
+        T = T[nonzero_idx]
+        S = S[:, nonzero_idx]
+        sigma = T**.5
+        G = (fastMult_upper_bidiagonal(S.T, B.T)).T/sigma
     elif m > n:
         B = B[:n]
         Qt = Qt[:n]
         m = n
-
-    # Eigen decomposition of B'@B = S @ T @ S'
-    # Eigen decomposition of B@B' = G @ T @ G'
-    T, G = eigen(B@B.T)
-    nonzero_idx = np.abs(T) > tol
-    T = T[nonzero_idx]
-    G = G[:, nonzero_idx]
-    sigma = T**.5
-    S = (fastMult_upper_bidiagonal(G.T, B)).T/sigma
+        # Eigen decomposition of B@B' = G @ T @ G'
+        # B = GTS' G'B = TS'
+        T, G = eigen(B@B.T)
+        nonzero_idx = np.abs(T) > tol
+        T = T[nonzero_idx]
+        G = G[:, nonzero_idx]
+        sigma = T**.5
+        S = (fastMult_upper_bidiagonal(G.T, B)).T/sigma
 
     U = Qt.T @ G
     Vt = S.T @ P.T
