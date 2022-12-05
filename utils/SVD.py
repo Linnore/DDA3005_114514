@@ -4,6 +4,7 @@
 import numpy as np
 from .HouseHolder import HouseHolder
 from .QR import *
+from time import time
 
 
 def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -110,8 +111,17 @@ def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR,
 
 
 def svd(A: np.ndarray, phaseII=svd_phaseIIA, eigen=eigh_by_QR) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    p1_begin = time()
     B, Qt, P = svd_phaseI(A)
-    return phaseII(B, Qt, P, eigen=eigen)
+    p1_end = time()
+    print("phaseI:", p1_end - p1_begin)
+
+    p2_begin = time()
+    U, S, Vt = phaseII(B, Qt, P, eigen=eigen)
+    p2_end = time()
+    print("phaseII:", p2_end-p2_begin)
+
+    return U, S, Vt
 
 
 if __name__ == "__main__":

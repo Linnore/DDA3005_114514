@@ -45,7 +45,7 @@ def qr_tridiagonal(T: np.ndarray, tol=1e-15, **arg) -> tuple[np.ndarray, np.ndar
     return Qt.T, X
 
 
-def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-15, maxn=1000, ascending=False) -> tuple[np.ndarray, np.ndarray]:
+def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-8, maxn=50, ascending=False) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the QR algorithm with deflation on the symmetric matrix A 
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
@@ -62,9 +62,10 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-1
         Q (np.ndarray): A 2d array (matrix) that contains the corresponding eigenvectors as columns.
     """
     n = A.shape[0]
-    X = A.copy()
+    # X = A.copy()
+    X = A
     if n == 1:
-        return np.array([X[0, 0]]), np.array([[1]])
+        return np.array(A), np.array([[1]])
     Q = np.identity(n)
     sigma = 0
     for k in range(maxn):
@@ -74,15 +75,16 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-1
         Q = Q@Qi
 
         if norm(X[-1, :-1]) <= tol:
-            T_hat, U_hat = eigh_by_QR(X[:n-1, :n-1])
+            T_hat, U_hat = eigh_by_QR(X[:n-1, :n-1], tol=tol)
             U = np.zeros((n, n))
             U[:n-1, :n-1] = U_hat
             U[-1, -1] = 1
             Q = Q@U
             T = np.append(T_hat, X[-1, -1])
             break
-    if not ascending:
-        idx = np.argsort(T)[::-1][:n]
-    else:
-        idx = np.argsort(T)
-    return T[idx], Q[:, idx]
+    # if not ascending:
+    #     idx = np.argsort(T)[::-1][:n]
+    # else:
+    #     idx = np.argsort(T)
+    # return T[idx], Q[:, idx]
+    return T, Q
