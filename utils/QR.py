@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.linalg import norm
-import scipy
+from scipy.linalg import cholesky_banded
+from scipy.linalg import cholesky
 
 
 def Rayleigh_Quotient_Shift(A: np.ndarray) -> int:
@@ -99,6 +100,110 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-8
         idx = np.argsort(T)
     return T[idx], Q[:, idx]
 
+
+def diagonal_form(a):
+    ab = np.zeros((3, a.shape[1]))
+    ab[2, :] = np.diagonal(a, 0)
+    ab[1, 1:] = np.diagonal(a, 1)
+    ab[0, 2:] = np.diagonal(a, 2)
+    return ab
+
+
+def matrix_form(a):
+    return np.diag(a[2, :], k=0) + np.diag(a[1, 1:], k=1)+np.diag(a[0, 2:], k=2)
+
+
+def check_if_small(K: np.ndarray, tol=1e-8):
+    def check_small_element(i: float):
+        if np.abs(i) > tol:
+            return 1
+        else:
+            return 0
+    check_small_element_vec = np.vectorize(check_small_element)
+    return check_small_element_vec(K)
+
+
+def eigh_by_QR_partB(B: np.ndarray, tol=1e-8, maxn=20) -> tuple[np.ndarray, np.ndarray]:
+    """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B.T@B by working on B
+    to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
+    and T is the diagonal matrix containing the corresponding eigenvalues.
+
+    Args:
+        B (np.ndarray): The bidiagonal square root matrix of matrix of interest.
+        tol (float, optional): The torlerence for each defletion step. Defaults to 1e-15.
+        maxn (int, optional): Maximum iterations at each defletion step. Defaults to 1000.
+
+    Returns:
+        T (np.ndarray): An 1d array that contains the eigenvalues of A in descending order.
+        Q (np.ndarray): A 2d array (matrix) that contains the corresponding eigenvectors as columns.
+    """
+    n = B.shape[0]
+    if n == 1:
+        return np.array([B[0, 0]]), np.array([[1]])
+    X = B
+    Q = np.identity(n)
+    for k in range(maxn):
+        Q_k, R_k = qr_tridiagonal(X)
+        if n <= 4:
+            L = cholesky(R_k @ R_k.T)
+        else:
+            ab = diagonal_form(R_k@R_k.T)
+            L = matrix_form(cholesky_banded(ab))
+        X = L
+        Q = Q @ Q_k
+        if norm(X[-1, :-1]) <= tol:
+            T_hat, U_hat = eigh_by_QR_partB(X[:n-1, :n-1])
+            U = np.zeros((n, n))
+            U[:n-1, :n-1] = U_hat
+            U[-1, -1] = 1
+            Q = Q@U
+            T = np.append(T_hat, X[-1, -1])
+            break
+    idx = np.argsort(T)[::-1][:n]
+    return T[idx], Q[:, idx]
+
+
+def eigh_by_QR_partB_optional(B: np.ndarray, tol=1e-8, maxn=10000) -> tuple[np.ndarray, np.ndarray]:
+    """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B.T@B by working on B
+    to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
+    and T is the diagonal matrix containing the corresponding eigenvalues.
+
+    Args:
+        B (np.ndarray): The bidiagonal square root matrix of matrix of interest.
+        tol (float, optional): The torlerence for each defletion step. Defaults to 1e-8.
+        maxn (int, optional): Maximum iterations at each defletion step. Defaults to 1000.
+
+    Returns:
+        T (np.ndarray): An 1d array that contains the eigenvalues of A in descending order.
+        Q (np.ndarray): A 2d array (matrix) that contains the corresponding eigenvectors as columns.
+    """
+    n = B.shape[0]
+    if n == 1:
+        return np.array([B[0, 0]]), np.array([[1]])
+    X = B
+    Q = np.identity(n)
+    for k in range(maxn):
+        Q_k, R_k = qr_tridiagonal(X)
+        ab = diagonal_form(R_k@R_k.T)
+        L = matrix_form(cholesky_banded(ab))
+        X = L
+        Q = Q @ Q_k
+        upper_diag_abs = np.abs(np.diag(X, 1))
+        min_index = np.argmin(upper_diag_abs)
+        if upper_diag_abs[min_index] <= tol:
+            left_upper_diag = X[:min_index+1, :min_index+1]
+            right_upper_diag = X[min_index+1:, min_index+1:]
+            T_hat_left, U_hat_left = eigh_by_QR_partB_optional(left_upper_diag)
+            T_hat_right, U_hat_right = eigh_by_QR_partB_optional(
+                right_upper_diag)
+            U = np.zeros((n, n))
+            U[:min_index+1, :min_index+1] = U_hat_left
+            U[min_index+1:, min_index+1:] = U_hat_right
+            Q = Q@U
+            T = np.append(T_hat_left, T_hat_right)
+            break
+    idx = np.argsort(T)[::-1][:n]
+    return T[idx], Q[:, idx]
 
 # Recursive way:
 

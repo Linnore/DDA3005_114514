@@ -5,6 +5,8 @@ import numpy as np
 from .HouseHolder import HouseHolder
 from .QR import *
 from time import time
+import sys
+sys.setrecursionlimit(4500)
 
 
 def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -75,7 +77,7 @@ def fastMult_upper_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     return result
 
 
-def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR, tol=1e-13) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR, tol=1e-13) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """This function implement the phaseII of SVD following the proposed procedure A in project description.
 
     Args:
@@ -125,14 +127,34 @@ def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR,
     return U, sigma, Vt
 
 
-def svd(A: np.ndarray, phaseII=svd_phaseIIA, eigen=eigh_by_QR) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """_summary_
+
+    Args:
+        A (np.ndarray): _description_
+        phaseII (str, optional): Possible choices: 'A', 'B1' ,and 'B2'. Defaults to 'Default'.
+        eigen (_type_, optional): _description_. Defaults to eigh_by_QR.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray, np.ndarray]: _description_
+    """
     p1_begin = time()
     B, Qt, P = svd_phaseI(A)
     p1_end = time()
     print("phaseI:", p1_end - p1_begin)
 
+    if phaseII == 'A':
+        eigenSolver = eigh_by_QR
+    elif phaseII == 'B1':
+        eigenSolver = eigh_by_QR_partB
+    elif phaseII == 'B2':
+        eigenSolver = eigh_by_QR_partB_optional
+    else:
+        eigenSolver = eigen
+
     p2_begin = time()
-    U, S, Vt = phaseII(B, Qt, P, eigen=eigen)
+    U, S, Vt = svd_phaseII(B, Qt, P, eigen=eigenSolver)
     p2_end = time()
     print("phaseII:", p2_end-p2_begin)
 
