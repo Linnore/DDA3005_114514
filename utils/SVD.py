@@ -160,11 +160,3 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
 
     return U, S, Vt
 
-
-if __name__ == "__main__":
-    A = np.array([[1, 0, 1],
-                  [2, 5**.5, 0],
-                  [0, 0, 1],
-                  [0, 0, 1]])
-    B, Qt, P = svd_phaseI(A)
-    print(B)
