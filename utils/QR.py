@@ -83,6 +83,7 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, qr=qr_tridiagonal, tol=1e-8
         Q = Q@Qi
 
         if norm(X[-1, :-1], ord=1) <= tol:
+            del Qi
             U_hat, T = eigh_by_QR(X[:n-1, :n-1], overwrite_A=True)
             Q[:, :-1] = Q[:, :-1]@U_hat
             T.append(X[-1, -1])
