@@ -200,7 +200,7 @@ def eigh_by_QR_partB_optional(B: np.ndarray, tol=1e-8, maxn=10000) -> tuple[np.n
             U[:min_index+1, :min_index+1] = U_hat_left
             U[min_index+1:, min_index+1:] = U_hat_right
             Q = Q@U
-            T = np.append(T_hat_lefct, T_hat_right)
+            T = np.append(T_hat_left, T_hat_right)
             break
     idx = np.argsort(T)[::-1][:n]
     return T[idx], Q[:, idx]
