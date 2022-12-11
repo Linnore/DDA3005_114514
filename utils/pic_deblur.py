@@ -93,7 +93,7 @@ def blur_picture(original_data,blur_type_l,blur_type_r,power_l, power_r):
         blur_data[:,:,i]= blur_kernel_l@original_data[:,:,i]@blur_kernel_r
     return blur_kernel_l,blur_kernel_r,blur_data
 
-def truncated_inverse(matr,trunc,size):
+def truncated_inverse(matr,trunc,size,svd_type):
     u,sigma,v = scipy.linalg.svd(matr)
     v = v.T
     A = np.zeros((size,size))
@@ -101,12 +101,12 @@ def truncated_inverse(matr,trunc,size):
         A += (np.outer(v[:,i],u[:,i])/sigma[i])
     return A
 
-def deblur_picture(blur_kernel_l,blur_kernel_r,blur_data,trunc):
+def deblur_picture(blur_kernel_l,blur_kernel_r,blur_data,trunc,svd_type):
     m,n,k = blur_data.shape
     psnr = []
     deblur_data = np.zeros((m,n,k))
-    A_l = truncated_inverse(blur_kernel_l,trunc,m)
-    A_r = truncated_inverse(blur_kernel_r,trunc,m)
+    A_l = truncated_inverse(blur_kernel_l,trunc,m,svd_type)
+    A_r = truncated_inverse(blur_kernel_r,trunc,m,svd_type)
     for i in range(k):
         deblur_data[:,:,i]= A_l@blur_data[:,:,i]@A_r
         norm_deblur = np.linalg.norm(deblur_data[:,:,i],'fro')
