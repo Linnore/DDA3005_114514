@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import norm
 from scipy.linalg import cholesky_banded
 from scipy.linalg import cholesky
-
+np.set_printoptions(precision=4)
 
 def Rayleigh_Quotient_Shift(A: np.ndarray) -> int:
     return A[-1, -1]
@@ -18,10 +18,8 @@ def Wilkinson_Shift(A: np.ndarray) -> int:
 
 def qr_tridiagonal(T: np.ndarray, tol=1e-8, overwrite_T=False, **arg) -> tuple[np.ndarray, np.ndarray]:
     """This function provide an efficient QR factorization for tridiagonal matrices using Givens Rotation.
-
     Args:
         T (np.ndarray): The tridiagonal matrix of interest.
-
     Returns:
         Q, R (np.ndarray, np.ndarray): The Q and R factors such that T = Q@R, where Q is an orthogonal
         matrix and R is upper triangular.
@@ -108,10 +106,8 @@ def diagonal_form(a):
     ab[0, 2:] = np.diagonal(a, 2)
     return ab
 
-
 def matrix_form(a):
     return np.diag(a[2, :], k=0) + np.diag(a[1, 1:], k=1)+np.diag(a[0, 2:], k=2)
-
 
 def check_if_small(K: np.ndarray, tol=1e-8):
     def check_small_element(i: float):
@@ -123,16 +119,14 @@ def check_if_small(K: np.ndarray, tol=1e-8):
     return check_small_element_vec(K)
 
 
-def eigh_by_QR_partB(B: np.ndarray, tol=1e-8, maxn=20) -> tuple[np.ndarray, np.ndarray]:
+def eigh_by_QR_partB(B: np.ndarray, tol=1e-8, maxn=2000) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B.T@B by working on B
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
-
     Args:
         B (np.ndarray): The bidiagonal square root matrix of matrix of interest.
         tol (float, optional): The torlerence for each defletion step. Defaults to 1e-15.
         maxn (int, optional): Maximum iterations at each defletion step. Defaults to 1000.
-
     Returns:
         T (np.ndarray): An 1d array that contains the eigenvalues of A in descending order.
         Q (np.ndarray): A 2d array (matrix) that contains the corresponding eigenvectors as columns.
@@ -142,24 +136,26 @@ def eigh_by_QR_partB(B: np.ndarray, tol=1e-8, maxn=20) -> tuple[np.ndarray, np.n
         return np.array([B[0, 0]]), np.array([[1]])
     X = B
     Q = np.identity(n)
+    T = None
     for k in range(maxn):
-        Q_k, R_k = qr_tridiagonal(X)
+        if n == 0:
+            break
+        Q_k, R_k = qr_tridiagonal(X[:n, :n])
         if n <= 4:
             L = cholesky(R_k @ R_k.T)
         else:
             ab = diagonal_form(R_k@R_k.T)
             L = matrix_form(cholesky_banded(ab))
         X = L
-        Q = Q @ Q_k
-        if norm(X[-1, :-1]) <= tol:
-            T_hat, U_hat = eigh_by_QR_partB(X[:n-1, :n-1])
-            U = np.zeros((n, n))
-            U[:n-1, :n-1] = U_hat
-            U[-1, -1] = 1
-            Q = Q@U
-            T = np.append(T_hat, X[-1, -1])
-            break
-    idx = np.argsort(T)[::-1][:n]
+        Q[:n, :n] = Q[:n, :n] @ Q_k
+        if norm(X[n-1, :n-1]) <= tol:
+            if n == B.shape[0]:
+                T = np.array(X[n-1, n-1])
+            else:
+                T = np.append(T, X[n-1, n-1])
+            maxn = 20
+            n -= 1
+    idx = np.argsort(T)[::-1][:B.shape[0]]
     return T[idx], Q[:, idx]
 
 
@@ -167,12 +163,10 @@ def eigh_by_QR_partB_optional(B: np.ndarray, tol=1e-8, maxn=10000) -> tuple[np.n
     """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B.T@B by working on B
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
-
     Args:
         B (np.ndarray): The bidiagonal square root matrix of matrix of interest.
         tol (float, optional): The torlerence for each defletion step. Defaults to 1e-8.
         maxn (int, optional): Maximum iterations at each defletion step. Defaults to 1000.
-
     Returns:
         T (np.ndarray): An 1d array that contains the eigenvalues of A in descending order.
         Q (np.ndarray): A 2d array (matrix) that contains the corresponding eigenvectors as columns.
@@ -204,6 +198,7 @@ def eigh_by_QR_partB_optional(B: np.ndarray, tol=1e-8, maxn=10000) -> tuple[np.n
             break
     idx = np.argsort(T)[::-1][:n]
     return T[idx], Q[:, idx]
+
 
 # Recursive way:
 
