@@ -146,7 +146,7 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
 
     if phaseII == 'A':
         eigenSolver = eigh_by_QR
-    elif phaseII == 'B1':
+    elif phaseII == 'B1' or phaseII == 'B':
         eigenSolver = eigh_by_QR_partB
     elif phaseII == 'B2':
         eigenSolver = eigh_by_QR_partB_optional
