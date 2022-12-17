@@ -119,12 +119,12 @@ def check_if_small(K: np.ndarray, tol=1e-8):
     return check_small_element_vec(K)
 
 
-def eigh_by_QR_partB(B: np.ndarray, tol=1e-8, maxn=2000) -> tuple[np.ndarray, np.ndarray]:
-    """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B.T@B by working on B
+def eigh_of_BBT(B: np.ndarray, tol=1e-8, maxn=2000) -> tuple[np.ndarray, np.ndarray]:
+    """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B@B.T
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
     Args:
-        B (np.ndarray): The bidiagonal square root matrix of matrix of interest.
+        B (np.ndarray): The upper bidiagonal square root matrix of matrix of interest.
         tol (float, optional): The torlerence for each defletion step. Defaults to 1e-15.
         maxn (int, optional): Maximum iterations at each defletion step. Defaults to 1000.
     Returns:
