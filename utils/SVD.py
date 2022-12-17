@@ -142,7 +142,6 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     m, n = A.shape
     flipped = False
     if m < n:
-        print("Flipped!")
         flipped = True
         A = A.T
         m, n = A.shape
