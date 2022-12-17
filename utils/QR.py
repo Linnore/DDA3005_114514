@@ -119,7 +119,7 @@ def check_if_small(K: np.ndarray, tol=1e-8):
     return check_small_element_vec(K)
 
 
-def eigh_of_BBT(B: np.ndarray, tol=1e-8, maxn=2000) -> tuple[np.ndarray, np.ndarray]:
+def eigh_of_BBT(B: np.ndarray, tol=1e-8, maxn=50) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B@B.T
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
@@ -159,13 +159,13 @@ def eigh_of_BBT(B: np.ndarray, tol=1e-8, maxn=2000) -> tuple[np.ndarray, np.ndar
     return T[idx], Q[:, idx]
 
 
-def eigh_by_QR_partB_optional(B: np.ndarray, tol=1e-8, maxn=10000) -> tuple[np.ndarray, np.ndarray]:
-    """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B.T@B by working on B
+def eigh_of_BBT_optional(B: np.ndarray, tol=1e-8, maxn=50) -> tuple[np.ndarray, np.ndarray]:
+    """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B@B.T
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
     Args:
-        B (np.ndarray): The bidiagonal square root matrix of matrix of interest.
-        tol (float, optional): The torlerence for each defletion step. Defaults to 1e-8.
+        B (np.ndarray): The upper bidiagonal square root matrix of matrix of interest.
+        tol (float, optional): The torlerence for each defletion step. Defaults to 1e-15.
         maxn (int, optional): Maximum iterations at each defletion step. Defaults to 1000.
     Returns:
         T (np.ndarray): An 1d array that contains the eigenvalues of A in descending order.
@@ -187,8 +187,8 @@ def eigh_by_QR_partB_optional(B: np.ndarray, tol=1e-8, maxn=10000) -> tuple[np.n
         if upper_diag_abs[min_index] <= tol:
             left_upper_diag = X[:min_index+1, :min_index+1]
             right_upper_diag = X[min_index+1:, min_index+1:]
-            T_hat_left, U_hat_left = eigh_by_QR_partB_optional(left_upper_diag)
-            T_hat_right, U_hat_right = eigh_by_QR_partB_optional(
+            T_hat_left, U_hat_left = eigh_of_BBT_optional(left_upper_diag)
+            T_hat_right, U_hat_right = eigh_of_BBT_optional(
                 right_upper_diag)
             U = np.zeros((n, n))
             U[:min_index+1, :min_index+1] = U_hat_left

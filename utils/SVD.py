@@ -68,11 +68,30 @@ def fastMult_upper_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     return result
 
 
+def fastMult_lower_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
+    """This function exploit the struction of a bidiagonal matrix to compute A@B in O(n^2), where A
+    is a general matrix and B is the lower bidiagonal matrix.
+
+    Args:
+        A (np.ndarray): _description_
+        B (np.ndarray): _description_
+
+    Returns:
+        (np.ndarray): The product A@B
+    """
+    m, n = (A.shape[0], B.shape[-1])
+    result = np.zeros((m, n))
+    result[:, -1] = B[-1, -1]*A[:, -1]
+    for i in range(n-2, -1, -1):
+        result[:, i] = B[i+1, i]*A[:, i+1] + B[i, i]*A[:, i]
+    return result
+
+
 def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eigen=eigh_by_QR, tol=1e-13) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """This function implement the phaseII of SVD following the proposed procedure A in project description.
 
     Args:
-        B (np.ndarray): The bidiagonalized version of A such that A = Qt @ B @ P
+        B (np.ndarray): The bidiagonalized version of A such that A = Qt @ B @ P. Note that B is upper triangular.
         Qt (np.ndarray): An orthogonal matrix that performs the left Householder transformation on A.
         P (np.ndarray): An orthogonal matrix that performs the rigth Householder transformation on A.
         phaseII (str): It indicates which phaseII is calling. Possible values are "A", "B", "B1", "B2".
@@ -89,14 +108,13 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
 
     # Discard the zero rows or columns
     m, n = B.shape
-
     B = B[:n]
     Qt = Qt[:n]
     m = n
     # Eigen decomposition of B@B' = G @ T @ G'
-    # B = GTS' G'B = TS'
+    # B = GTS'; G'B = TS'
     if phaseII == "A":
-        T, G = eigen(fastMult_upper_bidiagonal(B.T, B).T)
+        T, G = eigen(fastMult_lower_bidiagonal(B, B.T))
     else:
         T, G = eigen(B)
     nonzero_idx = np.abs(T) > tol
@@ -108,7 +126,6 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
     U = Qt.T @ G
     Vt = S.T @ P.T
     return U, sigma, Vt
-
 
 
 def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -125,10 +142,11 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     m, n = A.shape
     flipped = False
     if m < n:
+        print("Flipped!")
         flipped = True
         A = A.T
         m, n = A.shape
-    
+
     p1_begin = time()
     B, Qt, P = svd_phaseI(A)
     p1_end = time()
@@ -139,7 +157,7 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     elif phaseII == 'B1' or phaseII == 'B':
         eigenSolver = eigh_of_BBT
     elif phaseII == 'B2':
-        eigenSolver = eigh_by_QR_partB_optional
+        eigenSolver = eigh_of_BBT_optional
     else:
         phaseII = "A"
         eigenSolver = eigen
@@ -153,4 +171,3 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
         return Vt.T, S, U.T
     else:
         return U, S, Vt
-
