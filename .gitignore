@@ -3,3 +3,5 @@
 *.mat
 *.DS_Store
 *.mp4
+*.pyc
+*.cpython-39.pyc

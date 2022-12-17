@@ -5,6 +5,8 @@ import numpy as np
 from .HouseHolder import HouseHolder
 from .QR import *
 from time import time
+import sys
+sys.setrecursionlimit(4500)
 
 
 def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -29,7 +31,7 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     P[1:, 1:] = HouseHolder(B[0, 1:].T)
     B[:, 1:] = B[:, 1:] @ P[1:, 1:]
 
-    for i in range(1, r-1):
+    for i in range(1, r):
         Qit = HouseHolder(B[i:, i])
         B[i:, i:] = Qit @ B[i:, i:]
 
@@ -39,11 +41,10 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         Qt[i:, :] = Qit @ Qt[i:, :]
         P[:, i+1:] = P[:, i+1:] @ Pi
 
-    if m > n:
-        i = r-1
-        Qit = HouseHolder(B[i:, i])
-        B[i:, i:] = Qit @ B[i:, i:]
-        Qt[i:, :] = Qit @ Qt[i:, :]
+    i = r-1
+    Qit = HouseHolder(B[i:, i])
+    B[i:, i:] = Qit @ B[i:, i:]
+    Qt[i:, :] = Qit @ Qt[i:, :]
 
     return B, Qt, P
 
@@ -67,13 +68,33 @@ def fastMult_upper_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     return result
 
 
-def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR, tol=1e-15) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def fastMult_lower_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
+    """This function exploit the struction of a bidiagonal matrix to compute A@B in O(n^2), where A
+    is a general matrix and B is the lower bidiagonal matrix.
+
+    Args:
+        A (np.ndarray): _description_
+        B (np.ndarray): _description_
+
+    Returns:
+        (np.ndarray): The product A@B
+    """
+    m, n = (A.shape[0], B.shape[-1])
+    result = np.zeros((m, n))
+    result[:, -1] = B[-1, -1]*A[:, -1]
+    for i in range(n-2, -1, -1):
+        result[:, i] = B[i+1, i]*A[:, i+1] + B[i, i]*A[:, i]
+    return result
+
+
+def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eigen=eigh_by_QR, tol=1e-13) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """This function implement the phaseII of SVD following the proposed procedure A in project description.
 
     Args:
-        B (np.ndarray): The bidiagonalized version of A such that A = Qt @ B @ P
+        B (np.ndarray): The bidiagonalized version of A such that A = Qt @ B @ P. Note that B is upper triangular.
         Qt (np.ndarray): An orthogonal matrix that performs the left Householder transformation on A.
         P (np.ndarray): An orthogonal matrix that performs the rigth Householder transformation on A.
+        phaseII (str): It indicates which phaseII is calling. Possible values are "A", "B", "B1", "B2".
         eigen (function, optional): The eigen solver used to get eigenvalues and eigen vectors of B @B.T or B.T @ B. 
             Defaults to the one we implement: eigh_by_QR. Possible candidates could be scipy.linalg.eigh,
             sicpy.linalg.eigh_tridiagonal.
@@ -87,47 +108,66 @@ def svd_phaseIIA(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, eigen=eigh_by_QR,
 
     # Discard the zero rows or columns
     m, n = B.shape
-    if m < n:
-        B = B[:, :m]
-        P = P[:, :m]
-        n = m
-    elif m > n:
-        B = B[:n]
-        Qt = Qt[:n]
-        m = n
-
-    # Eigen decomposition of B'@B = S @ T @ S'
+    B = B[:n]
+    Qt = Qt[:n]
+    m = n
     # Eigen decomposition of B@B' = G @ T @ G'
-    T, G = eigen(B@B.T)
-    zero_idx = np.abs(T) > tol
+    # B = GTS'; G'B = TS'
+    if phaseII == "A":
+        T, G = eigen(fastMult_lower_bidiagonal(B, B.T))
+    else:
+        T, G = eigen(B)
+    nonzero_idx = np.abs(T) > tol
+    T = T[nonzero_idx]
+    G = G[:, nonzero_idx]
     sigma = T**.5
-    S = (fastMult_upper_bidiagonal(G.T, B))[zero_idx].T/sigma[zero_idx]
-    T = T[zero_idx]
-    G = G[:, zero_idx]
+    S = (fastMult_upper_bidiagonal(G.T, B)).T/sigma
 
     U = Qt.T @ G
     Vt = S.T @ P.T
-    return U, T**.5, Vt
+    return U, sigma, Vt
 
 
-def svd(A: np.ndarray, phaseII=svd_phaseIIA, eigen=eigh_by_QR) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """_summary_
+
+    Args:
+        A (np.ndarray): _description_
+        phaseII (str, optional): Possible choices: 'A', 'B1' ,and 'B2'. Defaults to 'Default'.
+        eigen (_type_, optional): _description_. Defaults to eigh_by_QR.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray, np.ndarray]: _description_
+    """
+    m, n = A.shape
+    flipped = False
+    if m < n:
+        print("Flipped!")
+        flipped = True
+        A = A.T
+        m, n = A.shape
+
     p1_begin = time()
     B, Qt, P = svd_phaseI(A)
     p1_end = time()
-    print("phaseI:", p1_end - p1_begin)
+    print("phaseI: {:4f}s".format(p1_end - p1_begin))
+
+    if phaseII == 'A':
+        eigenSolver = eigh_by_QR
+    elif phaseII == 'B1' or phaseII == 'B':
+        eigenSolver = eigh_of_BBT
+    elif phaseII == 'B2':
+        eigenSolver = eigh_of_BBT_optional
+    else:
+        phaseII = "A"
+        eigenSolver = eigen
 
     p2_begin = time()
-    U, S, Vt = phaseII(B, Qt, P, eigen=eigen)
+    U, S, Vt = svd_phaseII(B, Qt, P, phaseII, eigen=eigenSolver)
     p2_end = time()
-    print("phaseII:", p2_end-p2_begin)
+    print("phaseII: {:4f}s".format(p2_end - p2_begin))
 
-    return U, S, Vt
-
-
-if __name__ == "__main__":
-    A = np.array([[1, 0, 1],
-                  [2, 5**.5, 0],
-                  [0, 0, 1],
-                  [0, 0, 1]])
-    B, Qt, P = svd_phaseI(A)
-    print(B)
+    if flipped:
+        return Vt.T, S, U.T
+    else:
+        return U, S, Vt
