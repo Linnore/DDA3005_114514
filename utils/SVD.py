@@ -24,32 +24,31 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     m, n = A.shape
     B = A.copy()
 
-    Qt = np.identity(m)
+    Q = np.identity(m)
+    wq = np.empty((m, m))
     P = np.identity(n)
-    r = min(m, n)
+    wp = np.empty((n-1, n-1))
 
-    for i in range(r-1):
-        w, alpha = HouseHolder(B[i:, i])
-        w = w.reshape(-1,1)
-        HouseHolder_update(B[i:, i:], w, alpha)
-        Qt[i:, :] = Qt[i:, :] - w @ w.T @ Qt[i:, :]
+    for i in range(n-1):
+        wq[i, i:], alpha = HouseHolder(B[i:, i])
+        HouseHolder_update(B[i:, i:], wq[i, i:], alpha)
+        wp[i, i:], alpha = HouseHolder(B[i, i+1:])
+        HouseHolder_update(B[i:, i+1:].T, wp[i, i:], alpha)
+    i = n-1
+    wq[i, i:], alpha = HouseHolder(B[i:, i])
+    HouseHolder_update(B[i:, i:], wq[i, i:], alpha)
 
-        w, alpha = HouseHolder(B[i, i+1:])
-        w = w.reshape(-1,1)
-        HouseHolder_update(B[i:, i+1:].T, w, alpha)
-        P[:, i+1:] = P[:, i+1:] - P[:, i+1:] @ w @ w.T
+    # Forming Q and P reversely:
+    for i in range(n-1, 0, -1):
+        w = wq[i, i:].reshape(-1, 1)
+        Q[i:, i:] = Q[i:, i:] - w @ (w.T @ Q[i:, i:])
+        w = wp[i-1, i-1:].reshape(-1, 1)
+        P[i:, i:] = P[i:, i:] - w @ (w.T @ P[i:, i:])
+    i = 0
+    w = wq[i, i:].reshape(-1, 1)
+    Q[i:, i:] = Q[i:, i:] - w @ (w.T @ Q[i:, i:])
 
-    i = r-1
-    v, alpha = HouseHolder(B[i:, i])
-    if alpha == 0:
-        w = v.reshape((-1, 1))
-    else:
-        w = (np.sqrt(2)/norm(v) * v).reshape((-1, 1))
-    HouseHolder_update(B[i:, i:], w, alpha)
-    Qt[i:, :] = Qt[i:, :] - w @ (w.T @ Qt[i:, :])
-
-    return B, Qt, P
-    # Todo, form Q can be even faster!
+    return B, Q.T, P
 
 
 def fastMult_upper_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:

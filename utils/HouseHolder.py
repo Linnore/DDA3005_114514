@@ -35,6 +35,7 @@ def HouseHolder_update(A: np.ndarray, w: np.ndarray, alpha: float):
     if A.shape[0] > 1:
         A[1:, 0] = 0
     if A.shape[1] > 1:
+        w = w.reshape((-1, 1))
         A[:, 1:] = A[:, 1:] - w @ (w.T @ A[:, 1:])
     return
 

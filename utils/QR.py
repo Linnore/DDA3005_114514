@@ -131,6 +131,10 @@ def eigh_of_BBT(B: np.ndarray, tol=1e-8, maxn=50) -> tuple[np.ndarray, np.ndarra
         T (np.ndarray): An 1d array that contains the eigenvalues of A in descending order.
         Q (np.ndarray): A 2d array (matrix) that contains the corresponding eigenvectors as columns.
     """
+
+
+    # todo: B@B.T
+
     n = B.shape[0]
     if n == 1:
         return np.array([B[0, 0]]), np.array([[1]])
@@ -140,6 +144,7 @@ def eigh_of_BBT(B: np.ndarray, tol=1e-8, maxn=50) -> tuple[np.ndarray, np.ndarra
     for k in range(maxn):
         if n == 0:
             break
+        # todo: qr_lower_bidiagonal
         Q_k, R_k = qr_tridiagonal(X[:n, :n])
         if n <= 4:
             L = cholesky(R_k @ R_k.T)
@@ -159,7 +164,7 @@ def eigh_of_BBT(B: np.ndarray, tol=1e-8, maxn=50) -> tuple[np.ndarray, np.ndarra
     return T[idx], Q[:, idx]
 
 
-def eigh_of_BBT_optional(B: np.ndarray, tol=1e-8, maxn=50) -> tuple[np.ndarray, np.ndarray]:
+def eigh_of_BBT_optional(B: np.ndarray, tol=1e-8, maxn=2000) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B@B.T
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
