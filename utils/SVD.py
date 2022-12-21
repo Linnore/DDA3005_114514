@@ -22,6 +22,9 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
             where Qt is m by m, P is n by n.
     """
     m, n = A.shape
+    if m<n:
+        print("PhaseI only support tall matrix (m>=n) input!")
+        raise()
     B = A.copy()
 
     Q = np.identity(m)
@@ -144,6 +147,7 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     m, n = A.shape
     flipped = False
     if m < n:
+        print("test")
         flipped = True
         A = A.T
         m, n = A.shape
@@ -151,7 +155,7 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     p1_begin = time()
     B, Qt, P = svd_phaseI(A)
     p1_end = time()
-    print("phaseI: {:4f}s".format(p1_end - p1_begin))
+    print("phaseI: {:.4f}s".format(p1_end - p1_begin))
 
     if phaseII == 'A':
         eigenSolver = eigh_by_QR
@@ -166,7 +170,7 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     p2_begin = time()
     U, S, Vt = svd_phaseII(B, Qt, P, phaseII, eigen=eigenSolver)
     p2_end = time()
-    print("phaseII: {:4f}s".format(p2_end - p2_begin))
+    print("phaseII: {:.4f}s".format(p2_end - p2_begin))
 
     if flipped:
         return Vt.T, S, U.T
