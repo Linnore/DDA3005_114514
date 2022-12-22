@@ -4,6 +4,7 @@
 import numpy as np
 from .HouseHolder import HouseHolder, HouseHolder_update
 from .QR import *
+from .Bidiagonal_fastMult import *
 from time import time
 import sys
 sys.setrecursionlimit(4500)
@@ -54,45 +55,7 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return B, Q.T, P
 
 
-def fastMult_upper_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
-    """This function exploit the struction of a bidiagonal matrix to compute A@B in O(n^2), where A
-    is a general matrix and B is the upper bidiagonal matrix.
-
-    Args:
-        A (np.ndarray): _description_
-        B (np.ndarray): _description_
-
-    Returns:
-        (np.ndarray): The product A@B
-    """
-    m, n = (A.shape[0], B.shape[-1])
-    result = np.zeros((m, n))
-    result[:, 0] = B[0, 0]*A[:, 0]
-    for i in range(1, n):
-        result[:, i] = B[i-1, i]*A[:, i-1] + B[i, i]*A[:, i]
-    return result
-
-
-def fastMult_lower_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
-    """This function exploit the struction of a bidiagonal matrix to compute A@B in O(n^2), where A
-    is a general matrix and B is the lower bidiagonal matrix.
-
-    Args:
-        A (np.ndarray): _description_
-        B (np.ndarray): _description_
-
-    Returns:
-        (np.ndarray): The product A@B
-    """
-    m, n = (A.shape[0], B.shape[-1])
-    result = np.zeros((m, n))
-    result[:, -1] = B[-1, -1]*A[:, -1]
-    for i in range(n-2, -1, -1):
-        result[:, i] = B[i+1, i]*A[:, i+1] + B[i, i]*A[:, i]
-    return result
-
-
-def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eigen=eigh_by_QR, tol=1e-13) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eigen=eigh_by_QR, tol=1e-8) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """This function implement the phaseII of SVD following the proposed procedure A in project description.
 
     Args:
@@ -117,18 +80,19 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
     Qt = Qt[:n]
     m = n
 
-    B_nonzero_idx = np.abs(B.diagonal()) > tol
-    B = B[B_nonzero_idx]
-    B = B[:, B_nonzero_idx]
-    
-    Qt = Qt[B_nonzero_idx]
-    P = P[:, B_nonzero_idx]
-
     # Eigen decomposition of B@B' = G @ T @ G'
     # B = GTS'; G'B = TS'
     if phaseII == "A":
         T, G = eigen(fastMult_lower_bidiagonal(B, B.T))
+        nonzero_idx = np.abs(T) > tol
+        T = T[nonzero_idx]
+        G = G[:, nonzero_idx]
     else:
+        B_nonzero_idx = np.abs(B.diagonal()) > tol
+        B = B[B_nonzero_idx]
+        B = B[:, B_nonzero_idx]
+        Qt = Qt[B_nonzero_idx]
+        P = P[:, B_nonzero_idx]
         T, G = eigen(B)
 
     sigma = T**.5
