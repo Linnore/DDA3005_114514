@@ -2,8 +2,9 @@
 """
 
 import numpy as np
-from .HouseHolder import HouseHolder
-from .QR import *
+from .QR_Factorization import HouseHolder, HouseHolder_update
+from .EVD import *
+from .Bidiagonal_fastMult import *
 from time import time
 import sys
 sys.setrecursionlimit(4500)
@@ -11,83 +12,50 @@ sys.setrecursionlimit(4500)
 
 def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """This function implement the Golub-Kahan bidiagonalization to reduce the matrix A to bidiagonal form.
+    Note that this input matrix must be a tall matrix, i.e. m>=n.
 
     Args:
         A (np.ndarray): The matrix A whose SVD is of our interest.
 
     Returns:
-        B (np.ndarray): The bidiagonalized version of A, with dimension min(m,n) x min(m, n).
-        Qt (np.ndarray), and P (np.ndarray): The two transformation matrices such that B = Qt @ A @ P
+        B (np.ndarray): The bidiagonalized version of A, with dimension n x n.
+        Qt (np.ndarray), and P (np.ndarray): The two transformation matrices such that B = Qt @ A @ P,
+            where Qt is m by m, P is n by n.
     """
     m, n = A.shape
+    if m<n:
+        print("PhaseI only support tall matrix (m>=n) input!")
+        raise()
     B = A.copy()
+
+    Q = np.identity(m)
+    wq = np.empty((m, m))
+    P = np.identity(n)
+    wp = np.empty((n-1, n-1))
+
+    for i in range(n-1):
+        wq[i, i:], alpha = HouseHolder(B[i:, i])
+        HouseHolder_update(B[i:, i:], wq[i, i:], alpha)
+        wp[i, i:], alpha = HouseHolder(B[i, i+1:])
+        HouseHolder_update(B[i:, i+1:].T, wp[i, i:], alpha)
+    i = n-1
+    wq[i, i:], alpha = HouseHolder(B[i:, i])
+    HouseHolder_update(B[i:, i:], wq[i, i:], alpha)
+
+    # Forming Q and P reversely:
+    for i in range(n-1, 0, -1):
+        w = wq[i, i:].reshape(-1, 1)
+        Q[i:, i:] = Q[i:, i:] - w @ (w.T @ Q[i:, i:])
+        w = wp[i-1, i-1:].reshape(-1, 1)
+        P[i:, i:] = P[i:, i:] - w @ (w.T @ P[i:, i:])
     i = 0
-    Qt = HouseHolder(B[:, 0])
-    B = Qt @ B
+    w = wq[i, i:].reshape(-1, 1)
+    Q[i:, i:] = Q[i:, i:] - w @ (w.T @ Q[i:, i:])
 
-    r = min(m, n)
-    P = np.zeros((n, n))
-    P[0, 0] = 1
-    P[1:, 1:] = HouseHolder(B[0, 1:].T)
-    B[:, 1:] = B[:, 1:] @ P[1:, 1:]
-
-    for i in range(1, r):
-        Qit = HouseHolder(B[i:, i])
-        B[i:, i:] = Qit @ B[i:, i:]
-
-        Pi = HouseHolder(B[i, (i+1):])
-        B[i:, i+1:] = B[i:, i+1:] @ Pi
-
-        Qt[i:, :] = Qit @ Qt[i:, :]
-        P[:, i+1:] = P[:, i+1:] @ Pi
-
-    i = r-1
-    Qit = HouseHolder(B[i:, i])
-    B[i:, i:] = Qit @ B[i:, i:]
-    Qt[i:, :] = Qit @ Qt[i:, :]
-
-    return B, Qt, P
+    return B, Q.T, P
 
 
-def fastMult_upper_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
-    """This function exploit the struction of a bidiagonal matrix to compute A@B in O(n^2), where A
-    is a general matrix and B is the upper bidiagonal matrix.
-
-    Args:
-        A (np.ndarray): _description_
-        B (np.ndarray): _description_
-
-    Returns:
-        (np.ndarray): The product A@B
-    """
-    m, n = (A.shape[0], B.shape[-1])
-    result = np.zeros((m, n))
-    result[:, 0] = B[0, 0]*A[:, 0]
-    for i in range(1, n):
-        result[:, i] = B[i-1, i]*A[:, i-1] + B[i, i]*A[:, i]
-    return result
-
-
-def fastMult_lower_bidiagonal(A: np.ndarray, B: np.ndarray) -> np.ndarray:
-    """This function exploit the struction of a bidiagonal matrix to compute A@B in O(n^2), where A
-    is a general matrix and B is the lower bidiagonal matrix.
-
-    Args:
-        A (np.ndarray): _description_
-        B (np.ndarray): _description_
-
-    Returns:
-        (np.ndarray): The product A@B
-    """
-    m, n = (A.shape[0], B.shape[-1])
-    result = np.zeros((m, n))
-    result[:, -1] = B[-1, -1]*A[:, -1]
-    for i in range(n-2, -1, -1):
-        result[:, i] = B[i+1, i]*A[:, i+1] + B[i, i]*A[:, i]
-    return result
-
-
-def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eigen=eigh_by_QR, tol=1e-13) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eigen=eigh_by_QR, less_as_zero=1e-15) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """This function implement the phaseII of SVD following the proposed procedure A in project description.
 
     Args:
@@ -98,7 +66,7 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
         eigen (function, optional): The eigen solver used to get eigenvalues and eigen vectors of B @B.T or B.T @ B. 
             Defaults to the one we implement: eigh_by_QR. Possible candidates could be scipy.linalg.eigh,
             sicpy.linalg.eigh_tridiagonal.
-        tol (float): The tolerance for judging zero.
+        less_as_zero (float): The tolerance for judging zero.
 
     Returns:
         U (np.ndarray): The matrix containing left singular vectors of A as columns 
@@ -111,15 +79,22 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
     B = B[:n]
     Qt = Qt[:n]
     m = n
+
     # Eigen decomposition of B@B' = G @ T @ G'
     # B = GTS'; G'B = TS'
     if phaseII == "A":
         T, G = eigen(fastMult_lower_bidiagonal(B, B.T))
+        nonzero_idx = np.abs(T) > less_as_zero
+        T = T[nonzero_idx]
+        G = G[:, nonzero_idx]
     else:
+        B_nonzero_idx = np.abs(B.diagonal()) > less_as_zero
+        B = B[B_nonzero_idx]
+        B = B[:, B_nonzero_idx]
+        Qt = Qt[B_nonzero_idx]
+        P = P[:, B_nonzero_idx]
         T, G = eigen(B)
-    nonzero_idx = np.abs(T) > tol
-    T = T[nonzero_idx]
-    G = G[:, nonzero_idx]
+
     sigma = T**.5
     S = (fastMult_upper_bidiagonal(G.T, B)).T/sigma
 
@@ -142,6 +117,7 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     m, n = A.shape
     flipped = False
     if m < n:
+        print("test")
         flipped = True
         A = A.T
         m, n = A.shape
@@ -149,7 +125,7 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     p1_begin = time()
     B, Qt, P = svd_phaseI(A)
     p1_end = time()
-    print("phaseI: {:4f}s".format(p1_end - p1_begin))
+    print("phaseI: {:.4f}s".format(p1_end - p1_begin))
 
     if phaseII == 'A':
         eigenSolver = eigh_by_QR
@@ -164,9 +140,10 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     p2_begin = time()
     U, S, Vt = svd_phaseII(B, Qt, P, phaseII, eigen=eigenSolver)
     p2_end = time()
-    print("phaseII: {:4f}s".format(p2_end - p2_begin))
+    print("phaseII: {:.4f}s".format(p2_end - p2_begin))
 
     if flipped:
         return Vt.T, S, U.T
     else:
         return U, S, Vt
+

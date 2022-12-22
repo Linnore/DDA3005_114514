@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 import utils
 from scipy.stats import qmc
-from utils import HouseHolder, QR, SVD
+from utils import SVD
 import scipy.io
 import scipy.linalg
 from PIL import Image
@@ -11,6 +11,9 @@ from matplotlib import image
 from matplotlib import pyplot as plt
 import time
 import os
+
+from utils import EVD
+from utils import QR_Factorization
 
 def generate_tri_T(n,k):
     """
