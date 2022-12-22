@@ -2,8 +2,8 @@
 """
 
 import numpy as np
-from .HouseHolder import HouseHolder, HouseHolder_update
-from .QR import *
+from .QR_Factorization import HouseHolder, HouseHolder_update
+from .EVD import *
 from .Bidiagonal_fastMult import *
 from time import time
 import sys
@@ -55,7 +55,7 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return B, Q.T, P
 
 
-def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eigen=eigh_by_QR, tol=1e-8) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eigen=eigh_by_QR, less_as_zero=1e-15) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """This function implement the phaseII of SVD following the proposed procedure A in project description.
 
     Args:
@@ -66,7 +66,7 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
         eigen (function, optional): The eigen solver used to get eigenvalues and eigen vectors of B @B.T or B.T @ B. 
             Defaults to the one we implement: eigh_by_QR. Possible candidates could be scipy.linalg.eigh,
             sicpy.linalg.eigh_tridiagonal.
-        tol (float): The tolerance for judging zero.
+        less_as_zero (float): The tolerance for judging zero.
 
     Returns:
         U (np.ndarray): The matrix containing left singular vectors of A as columns 
@@ -84,11 +84,11 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
     # B = GTS'; G'B = TS'
     if phaseII == "A":
         T, G = eigen(fastMult_lower_bidiagonal(B, B.T))
-        nonzero_idx = np.abs(T) > tol
+        nonzero_idx = np.abs(T) > less_as_zero
         T = T[nonzero_idx]
         G = G[:, nonzero_idx]
     else:
-        B_nonzero_idx = np.abs(B.diagonal()) > tol
+        B_nonzero_idx = np.abs(B.diagonal()) > less_as_zero
         B = B[B_nonzero_idx]
         B = B[:, B_nonzero_idx]
         Qt = Qt[B_nonzero_idx]
@@ -147,43 +147,3 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     else:
         return U, S, Vt
 
-
-# def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-#     """This function implement the Golub-Kahan bidiagonalization to reduce the matrix A to bidiagonal form.
-
-#     Args:
-#         A (np.ndarray): The matrix A whose SVD is of our interest.
-
-#     Returns:
-#         B (np.ndarray): The bidiagonalized version of A, with dimension min(m,n) x min(m, n).
-#         Qt (np.ndarray), and P (np.ndarray): The two transformation matrices such that B = Qt @ A @ P
-#     """
-#     m, n = A.shape
-#     B = A.copy()
-#     i = 0
-#     Qt = HouseHolder(B[:, 0])
-#     B = Qt @ B
-
-#     r = min(m, n)
-#     P = np.zeros((n, n))
-#     P[0, 0] = 1
-#     P[1:, 1:] = HouseHolder(B[0, 1:].T)
-#     B[:, 1:] = B[:, 1:] @ P[1:, 1:]
-
-#     for i in range(1, r-1):
-#         Qit = HouseHolder(B[i:, i])
-#         # print(np.sum(np.abs(Qit-Qit.T) < 1e-14)==B[i:, i].shape[0]**2)
-#         B[i:, i:] = Qit @ B[i:, i:]
-
-#         Pi = HouseHolder(B[i, (i+1):])
-#         B[i:, i+1:] = B[i:, i+1:] @ Pi
-
-#         Qt[i:, :] = Qit @ Qt[i:, :]
-#         P[:, i+1:] = P[:, i+1:] @ Pi
-
-#     i = r-1
-#     Qit = HouseHolder(B[i:, i])
-#     B[i:, i:] = Qit @ B[i:, i:]
-#     Qt[i:, :] = Qit @ Qt[i:, :]
-
-#     return B, Qt, P
