@@ -79,20 +79,17 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
     B = B[:n]
     Qt = Qt[:n]
     m = n
+    B_nonzero_idx = np.abs(B.diagonal()) > less_as_zero
+    B = B[B_nonzero_idx]
+    B = B[:, B_nonzero_idx]
+    Qt = Qt[B_nonzero_idx]
+    P = P[:, B_nonzero_idx]
 
     # Eigen decomposition of B@B' = G @ T @ G'
     # B = GTS'; G'B = TS'
     if phaseII == "A":
         T, G = eigen(fastMult_lower_bidiagonal(B, B.T))
-        nonzero_idx = np.abs(T) > less_as_zero
-        T = T[nonzero_idx]
-        G = G[:, nonzero_idx]
     else:
-        B_nonzero_idx = np.abs(B.diagonal()) > less_as_zero
-        B = B[B_nonzero_idx]
-        B = B[:, B_nonzero_idx]
-        Qt = Qt[B_nonzero_idx]
-        P = P[:, B_nonzero_idx]
         T, G = eigen(B)
 
     sigma = T**.5
