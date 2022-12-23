@@ -78,6 +78,7 @@ def applyGivenses(X: np.ndarray, c: np.ndarray, s: np.ndarray, axis=0):
     for i in range(n):
         GivensRotate(X[i:i+2], c[i], s[i])
 
+
 def qr_tridiagonal_by_Givens(T: np.ndarray, less_as_zero=1e-15, return_Givens=False) -> tuple[np.ndarray, np.ndarray]:
     """This function provide an efficient QR factorization for tridiagonal matrices using Givens Rotation.
     Args:
@@ -111,7 +112,7 @@ def qr_tridiagonal_by_Givens(T: np.ndarray, less_as_zero=1e-15, return_Givens=Fa
         GivensRotate(X[i:i+2], c, s)
         if return_Givens:
             givens_c[i] = c
-            givens_s[i] = s  
+            givens_s[i] = s
         else:
             GivensRotate(Qt[i:i+2], c, s)
 

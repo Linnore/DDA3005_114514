@@ -7,20 +7,24 @@ from .EVD import *
 from .Bidiagonal_fastMult import *
 from time import time
 
+
 def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """This function implement the Golub-Kahan bidiagonalization to reduce the matrix A to bidiagonal form.
-    Note that this input matrix must be a tall matrix, i.e. m>=n.
+    """This function implement the Golub-Kahan bidiagonalization to reduce the matrix A to bidiagonal form B,
+    where A = Qt @ B @ P.
+        Note that this input matrix must be a tall matrix, i.e. m>=n. 
+        We achieve O(n^3) instead of O(n^4) when forming the orthogonal factors Qt and P. The procedure is very much
+    like performing HouseHolder QR factorization left and right at the same time.
 
     Args:
         A (np.ndarray): The matrix A whose SVD is of our interest.
 
     Returns:
         B (np.ndarray): The bidiagonalized version of A, with dimension n x n.
-        Qt (np.ndarray), and P (np.ndarray): The two transformation matrices such that B = Qt @ A @ P,
+        Qt and P (np.ndarray): The two transformation matrices such that B = Qt @ A @ P,
             where Qt is m by m, P is n by n.
     """
     m, n = A.shape
-    if m<n:
+    if m < n:
         print("PhaseI only support tall matrix (m>=n) input!")
         raise()
     B = A.copy()
@@ -33,6 +37,7 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     for i in range(n-1):
         wq[i, i:], alpha = HouseHolder(B[i:, i])
         HouseHolder_update(B[i:, i:], wq[i, i:], alpha)
+
         wp[i, i:], alpha = HouseHolder(B[i, i+1:])
         HouseHolder_update(B[i:, i+1:].T, wp[i, i:], alpha)
     i = n-1
@@ -43,6 +48,7 @@ def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     for i in range(n-1, 0, -1):
         w = wq[i, i:].reshape(-1, 1)
         Q[i:, i:] = Q[i:, i:] - w @ (w.T @ Q[i:, i:])
+
         w = wp[i-1, i-1:].reshape(-1, 1)
         P[i:, i:] = P[i:, i:] - w @ (w.T @ P[i:, i:])
     i = 0
@@ -98,20 +104,19 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
 
 
 def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """_summary_
+    """This function compute the economic SVD of a real matrix A.
 
     Args:
-        A (np.ndarray): _description_
-        phaseII (str, optional): Possible choices: 'A', 'B1' ,and 'B2'. Defaults to 'Default'.
+        A (np.ndarray): A real matrix.
+        phaseII (str, optional): Possible choices: 'A', 'B1', 'B2', and 'C'. Defaults to 'Default'.
         eigen (_type_, optional): _description_. Defaults to eigh_by_QR.
 
     Returns:
-        tuple[np.ndarray, np.ndarray, np.ndarray]: _description_
+        U, S, Vt (np.ndarray): The economic SVD of matrix A s.t. A=U@diag(S)@Vt.
     """
     m, n = A.shape
     flipped = False
     if m < n:
-        print("test")
         flipped = True
         A = A.T
         m, n = A.shape
@@ -127,6 +132,8 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
         eigenSolver = eigh_of_BBT
     elif phaseII == 'B2':
         eigenSolver = eigh_of_BBT_optional
+    elif phaseII == 'C':
+        eigenSolver = eigh_of_BBT_cheat
     else:
         phaseII = "A"
         eigenSolver = eigen
@@ -140,4 +147,3 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
         return Vt.T, S, U.T
     else:
         return U, S, Vt
-
