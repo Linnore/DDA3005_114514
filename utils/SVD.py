@@ -6,9 +6,6 @@ from .QR_Factorization import HouseHolder, HouseHolder_update
 from .EVD import *
 from .Bidiagonal_fastMult import *
 from time import time
-import sys
-sys.setrecursionlimit(4500)
-
 
 def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """This function implement the Golub-Kahan bidiagonalization to reduce the matrix A to bidiagonal form.
