@@ -81,6 +81,12 @@ def applyGivenses(X: np.ndarray, c: np.ndarray, s: np.ndarray, axis=0):
 
 def qr_tridiagonal_by_Givens(T: np.ndarray, less_as_zero=1e-15, return_Givens=False) -> tuple[np.ndarray, np.ndarray]:
     """This function provide an efficient QR factorization for tridiagonal matrices using Givens Rotation.
+    Comlexity of this function, wlog we assume T is n by n: 
+        return_Givens = true, O(n) + O(n^2);
+        return_Givens = false, O(n^2) + O(n^2);
+    where the first term above depends on whether forming Q or not, 
+        and the second term is for forming R factor.
+    
     Args:
         T (np.ndarray): The tridiagonal matrix of interest with size m x n.
         return_Givens (bool): If this is true, then this function will form the Q factor and return Q directly;
@@ -110,6 +116,53 @@ def qr_tridiagonal_by_Givens(T: np.ndarray, less_as_zero=1e-15, return_Givens=Fa
         s = ak/(ai**2 + ak**2)**.5
         # Givens rotation
         GivensRotate(X[i:i+2], c, s)
+        if return_Givens:
+            givens_c[i] = c
+            givens_s[i] = s
+        else:
+            GivensRotate(Qt[i:i+2], c, s)
+
+    if return_Givens:
+        return givens_c, givens_s, X
+    else:
+        return Qt.T, X
+
+def qr_lower_bidiagonal_by_Givens(LB: np.ndarray, less_as_zero=1e-15, return_Givens=False) -> tuple[np.ndarray, np.ndarray]:
+    """This function provide an efficient QR factorization for lower bidiagonal matrices using Givens Rotation.
+    Comlexity of this function, wlog we assume T is n by n: 
+        return_Givens = true, O(n) + O(n);
+        return_Givens = false, O(n^2) + O(n);
+    where the first term above depends on whether forming Q or not, 
+        and the second term is for forming R factor.
+    Args:
+        T (np.ndarray): The tridiagonal matrix of interest with size m x n.
+        return_Givens (bool): If this is true, then this function will form the Q factor and return Q directly;
+            otherwise, this function will return the list of values c and s that define the n-1 times of 
+            Givens rotations. Say each Givens rotations define a matrix Gi, i=0 to n-2, then Gi[i,i] = c[i], Gi[i,i+1] = s[i],
+            Gi[i+1,i] = -s[i], Gi[i+1,i+1] = c[i] and remaining parts of Gi are identity matrices. To form
+            Q, one can simply multiplay all Gi as G0 @ G1 @ ... @ G_{n-2}.
+        less_as_zero (float): The tolerance for judging zero.
+    Returns:
+        Q, R (np.ndarray, np.ndarray): The Q and R factors such that T = Q@R, where Q is an orthogonal
+        matrix and R is upper triangular.
+    """
+    X = np.array(LB, dtype=np.float64)
+    m, n = X.shape
+
+    if return_Givens:
+        givens_c = np.zeros(n-1)
+        givens_s = np.zeros(n-1)
+    else:
+        Qt = np.identity(m)
+    for i in range(n-1):
+        ai = X[i, i]
+        ak = X[i+1, i]
+        if abs(ai) < less_as_zero and abs(ak) < less_as_zero:
+            continue
+        c = ai/(ai**2 + ak**2)**.5
+        s = ak/(ai**2 + ak**2)**.5
+        # Givens rotation
+        GivensRotate(X[i:i+2, i:i+2], c, s)
         if return_Givens:
             givens_c[i] = c
             givens_s[i] = s

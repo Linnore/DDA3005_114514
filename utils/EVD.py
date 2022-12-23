@@ -3,8 +3,8 @@ from scipy.linalg import norm
 from scipy.linalg import cholesky_banded
 from scipy.linalg import cholesky
 
-from .Bidiagonal_fastMult import fastMult_lower_bidiagonal
-from .QR_Factorization import applyGivenses, qr_tridiagonal_by_Givens
+from .Bidiagonal_fastMult import upper_fastMult_lower_bidiagonal
+from .QR_Factorization import applyGivenses, qr_tridiagonal_by_Givens, qr_lower_bidiagonal_by_Givens
 
 
 def Rayleigh_Quotient_Shift(A: np.ndarray) -> int:
@@ -106,12 +106,12 @@ def eigh_of_BBT(B: np.ndarray, tol=1e-8) -> tuple[np.ndarray, np.ndarray]:
         if n == 1:
             T[0] = X[0, 0]
             break
-        givens_ck, givens_sk, R_k = qr_tridiagonal_by_Givens(
+        givens_ck, givens_sk, R_k = qr_lower_bidiagonal_by_Givens(
             X[:n, :n], return_Givens=True)
         if n <= 4:
-            L = cholesky(fastMult_lower_bidiagonal(R_k, R_k.T))
+            L = cholesky(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
         else:
-            ab = diagonal_form(fastMult_lower_bidiagonal(R_k, R_k.T))
+            ab = diagonal_form(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
             L = matrix_form(cholesky_banded(ab))
         X = L
 
@@ -144,13 +144,13 @@ def eigh_of_BBT_cheat(B: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         if n == 1:
             T[0] = X[0, 0]
             break
-        givens_ck, givens_sk, R_k = qr_tridiagonal_by_Givens(
+        givens_ck, givens_sk, R_k = qr_lower_bidiagonal_by_Givens(
             X[:n, :n], return_Givens=True)
 
         if n <= 4:
-            L = cholesky(fastMult_lower_bidiagonal(R_k, R_k.T))
+            L = cholesky(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
         else:
-            ab = diagonal_form(fastMult_lower_bidiagonal(R_k, R_k.T))
+            ab = diagonal_form(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
             L = matrix_form(cholesky_banded(ab))
 
         X = L
@@ -204,13 +204,14 @@ def eigh_of_BBT_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-
                     T=T[min_index+1:], start_flag=False)
             break
 
-        givens_ck, givens_sk, R_k = qr_tridiagonal_by_Givens(
+        givens_ck, givens_sk, R_k = qr_lower_bidiagonal_by_Givens(
             X, return_Givens=True)
         if n <= 4:
-            L = cholesky(fastMult_lower_bidiagonal(R_k, R_k.T))
+            L = cholesky(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
         else:
-            ab = diagonal_form(fastMult_lower_bidiagonal(R_k, R_k.T))
+            ab = diagonal_form(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
             L = matrix_form(cholesky_banded(ab))
+        del R_k
         X = L
         applyGivenses(Q, givens_ck, givens_sk)
 

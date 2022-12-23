@@ -91,7 +91,7 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
     # Eigen decomposition of B@B' = G @ T @ G'
     # B = GTS'; G'B = TS'
     if phaseII == "A":
-        T, G = eigen(fastMult_lower_bidiagonal(B, B.T))
+        T, G = eigen(upper_fastMult_lower_bidiagonal(B, B.T))
     else:
         T, G = eigen(B)
 
