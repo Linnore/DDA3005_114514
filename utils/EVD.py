@@ -174,7 +174,7 @@ def eigh_of_BBT_cheat(B: np.ndarray, return_singularV_of_B=True) -> tuple[np.nda
         return T[idx]**2, Q[:, idx]
 
 
-def eigh_of_BBT_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-15, return_singularV_of_B=True) -> tuple[np.ndarray, np.ndarray]:
+def eigh_of_BBT_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-8, return_singularV_of_B=True) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B@B.T
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
