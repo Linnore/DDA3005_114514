@@ -2,10 +2,11 @@ import numpy as np
 from scipy.linalg import norm
 from scipy.linalg import cholesky_banded
 from scipy.linalg import cholesky
+import numpy
 
 from .Bidiagonal_fastMult import upper_fastMult_lower_bidiagonal
 from .QR_Factorization import applyGivenses, qr_tridiagonal_by_Givens, qr_lower_bidiagonal_by_Givens
-
+from .SVD import is_orthogonal
 
 def Rayleigh_Quotient_Shift(A: np.ndarray) -> int:
     return A[-1, -1]
@@ -52,16 +53,28 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, tol=1e-8, maxn=100, overwri
             sigma = shift(X[:i, :i])
             np.fill_diagonal(X[:i, :i], X[:i, :i].diagonal() - sigma)
 
+            # Qi, Ri = qr_tridiagonal_by_Givens(X[:i, :i])
+            # X[:i, :i] = Ri @ Qi
+            # Q[:, :i] = Q[:, :i] @ Qi
+
             # The following 3 lines are same as: X=QR; X=RQ.
             givens_ci, givens_si, Ri = qr_tridiagonal_by_Givens(
                 X[:i, :i], return_Givens=True)
             applyGivenses(Ri, givens_ci, givens_si, axis=1)
             X[:i, :i] = Ri
 
-            np.fill_diagonal(X[:i, :i], X[:i, :i].diagonal() + sigma)
-
             # The following 1 line is same as Q = Q@Qi.
+
+            # tmp = np.identity(Qi.shape[0])
+            # applyGivenses(tmp, givens_ci, givens_si, axis=1)
+            # print(givens_ci.shape)
+            # print(is_orthogonal(tmp))
+            # print(norm(tmp-Qi))
+
+
             applyGivenses(Q[:, :i], givens_ci, givens_si, axis=1)
+
+            np.fill_diagonal(X[:i, :i], X[:i, :i].diagonal() + sigma)
 
             if np.abs(X[i-1, i-2]) <= tol:
                 flag_explode = False
@@ -109,8 +122,11 @@ def eigh_of_BBT(B: np.ndarray, tol=1e-8, return_singularV_of_B=True) -> tuple[np
         if n == 1:
             T[0] = X[0, 0]
             break
+        # Qi, R_k = numpy.linalg.qr(X[:n, :n].T, mode='full')
+        # X[:n, :n] = Ri @ Qi
+        # Q[:, :n] = Q[:, :n] @ Qi
         givens_ck, givens_sk, R_k = qr_lower_bidiagonal_by_Givens(
-            X[:n, :n], return_Givens=True)
+            X[:n, :n].T, return_Givens=True)
         if n <= 4:
             L = cholesky(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
         else:
@@ -153,7 +169,7 @@ def eigh_of_BBT_cheat(B: np.ndarray, return_singularV_of_B=True) -> tuple[np.nda
             T[0] = X[0, 0]
             break
         givens_ck, givens_sk, R_k = qr_lower_bidiagonal_by_Givens(
-            X[:n, :n], return_Givens=True)
+            X[:n, :n].T, return_Givens=True)
 
         if n <= 4:
             L = cholesky(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
@@ -218,7 +234,7 @@ def eigh_of_BBT_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-
             break
 
         givens_ck, givens_sk, R_k = qr_lower_bidiagonal_by_Givens(
-            X, return_Givens=True)
+            X.T, return_Givens=True)
         if n <= 4:
             L = cholesky(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
         else:

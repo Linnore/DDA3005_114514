@@ -110,6 +110,7 @@ def qr_tridiagonal_by_Givens(T: np.ndarray, less_as_zero=1e-15, return_Givens=Fa
     for i in range(n-1):
         ai = X[i, i]
         ak = X[i+1, i]
+        # if np.abs(ak) < less_as_zero:
         if abs(ai) < less_as_zero and abs(ak) < less_as_zero:
             continue
         c = ai/(ai**2 + ak**2)**.5

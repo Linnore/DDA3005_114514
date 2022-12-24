@@ -164,3 +164,10 @@ def accuracy_test(A, U, S, Vt, acc=1e-8):
 
     print("Max error of singular values:")
     print(np.abs(ref_sv[:S.size] - S).max())
+
+def is_orthogonal(A, tol=1e-4, silence=True):
+    m = A.shape[0]
+    Q = A @ A.T
+    if not silence:
+        print(np.linalg.norm(np.identity(m) - Q))
+    return np.linalg.norm(np.identity(m) - Q) < tol
