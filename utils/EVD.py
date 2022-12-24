@@ -12,8 +12,6 @@ def Rayleigh_Quotient_Shift(A: np.ndarray) -> int:
 
 
 def Wilkinson_Shift(A: np.ndarray) -> int:
-    if A.shape[0] == 1:
-        return A[0, 0]
     T = A[-2, -2] + A[-1, -1]
     D = A[-2, -2]*A[-1, -1] - A[-1, -2]*A[-2, -1]
     e1 = T/2 + (T**2/4 - D)**.5
@@ -26,7 +24,7 @@ def zero_Shift(A):
 
 
 def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, tol=1e-8, maxn=100, overwrite_A=False):
-    """This function applies the QR algorithm with deflation on the symmetric tridiagonal matrix A
+    """This function applies the QR algorithm with deflation on the symmetric matrix A
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
     Args:
@@ -46,7 +44,7 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, tol=1e-8, maxn=100, overwri
 
     Q = np.identity(n)
     T = np.empty(n)
-    for i in range(n, 0, -1):
+    for i in range(n, 1, -1):
         flag_explode = True
         for k in range(maxn):
             sigma = shift(X[:i, :i])
@@ -70,6 +68,7 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, tol=1e-8, maxn=100, overwri
         if flag_explode:
             print(k, norm(X[-1, :-1], ord=1))
             print("Max iter warning!")
+    T[0] = X[0, 0]
 
     idx = np.argsort(T)[::-1][:n]
     return T[idx], Q[:, idx]

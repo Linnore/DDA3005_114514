@@ -127,13 +127,9 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     p1_end = time()
     print("phaseI: {:.4f}s".format(p1_end - p1_begin))
 
-    if phaseII == 'A' or phaseII == 'A1':
-        phaseII = 'A'
+    if phaseII == 'A':
         eigenSolver = eigh_by_QR
-    elif phaseII == 'A2':
-        phaseII = 'A'
-        eigenSolver = eigh_by_QR_optional
-    elif phaseII == 'B' or phaseII == 'B1':
+    elif phaseII == 'B1' or phaseII == 'B':
         eigenSolver = eigh_of_BBT
     elif phaseII == 'B2':
         eigenSolver = eigh_of_BBT_optional
