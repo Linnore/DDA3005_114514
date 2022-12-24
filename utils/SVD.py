@@ -152,3 +152,13 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
         return Vt.T, S, U.T
     else:
         return U, S, Vt
+
+def accuracy_test(U, S, Vt, ref_sv, acc=1e-8):    
+    print("Percentage of entrices successfully recovered by SVD with accuracy: {}".format(acc))
+    print(np.sum(np.abs(U@np.diag(S)@Vt - A)< acc) / (n*m) * 100, "%")
+
+    print("Percentage of singular values with accuracy: {}".format(acc))
+    print(np.sum(np.abs(S - ref_sv[:S.size])< acc) / S.size * 100, "%")
+
+    print("Max error of singular values:")
+    print(np.abs(ref_sv[:S.size] - S).max())
