@@ -92,10 +92,11 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
     # B = GTS'; G'B = TS'
     if phaseII == "A":
         T, G = eigen(upper_fastMult_lower_bidiagonal(B, B.T))
+        sigma = T**.5
     else:
-        T, G = eigen(B)
+        sigma, G = eigen(B, return_singularV_of_B=True)
 
-    sigma = T**.5
+    # sigma = T**.5
     S = (fastMult_upper_bidiagonal(G.T, B)).T/sigma
 
     U = Qt.T @ G

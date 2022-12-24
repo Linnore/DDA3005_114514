@@ -87,13 +87,15 @@ def matrix_form(a):
     return np.diag(a[2, :], k=0) + np.diag(a[1, 1:], k=1)+np.diag(a[0, 2:], k=2)
 
 
-def eigh_of_BBT(B: np.ndarray, tol=1e-8) -> tuple[np.ndarray, np.ndarray]:
+def eigh_of_BBT(B: np.ndarray, tol=1e-8, return_singularV_of_B=True) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B@B.T
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
     Args:
         B (np.ndarray): The upper bidiagonal square root matrix of matrix of interest.
         tol (float, optional): The torlerence for each defletion step. Defaults to 1e-15.
+        return_singularV_of_B (bool): If this is true, return eigenvalues of A; otherwise return 
+            singular values of B.
     Returns:
         T (np.ndarray): An 1d array that contains the eigenvalues of A in descending order.
         Q (np.ndarray): A 2d array (matrix) that contains the corresponding eigenvectors as columns.
@@ -123,15 +125,20 @@ def eigh_of_BBT(B: np.ndarray, tol=1e-8) -> tuple[np.ndarray, np.ndarray]:
             T[n-1] = X[n-1, n-1]
             n -= 1
     idx = np.argsort(T)[::-1][:B.shape[0]]
-    return T[idx], Q[:, idx]
+    if return_singularV_of_B:
+        return T[idx], Q[:, idx]
+    else:
+        return T[idx]**2, Q[:, idx]
 
 
-def eigh_of_BBT_cheat(B: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def eigh_of_BBT_cheat(B: np.ndarray, return_singularV_of_B=True) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B@B.T
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
     Args:
         B (np.ndarray): The upper bidiagonal square root matrix of matrix of interest.
+        return_singularV_of_B (bool): If this is true, return eigenvalues of A; otherwise return 
+            singular values of B.
     Returns:
         T (np.ndarray): An 1d array that contains the eigenvalues of A in descending order.
         Q (np.ndarray): A 2d array (matrix) that contains the corresponding eigenvectors as columns.
@@ -161,10 +168,13 @@ def eigh_of_BBT_cheat(B: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         T[n-1] = X[n-1, n-1]
         n -= 1
     idx = np.argsort(T)[::-1][:B.shape[0]]
-    return T[idx], Q[:, idx]
+    if return_singularV_of_B:
+        return T[idx], Q[:, idx]
+    else:
+        return T[idx]**2, Q[:, idx]
 
 
-def eigh_of_BBT_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-15) -> tuple[np.ndarray, np.ndarray]:
+def eigh_of_BBT_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-15, return_singularV_of_B=True) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B@B.T
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
@@ -173,6 +183,8 @@ def eigh_of_BBT_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-
         start_flag (bool): If start_flag is true, it means this function is called externally; 
             otherwise, it is called internally as recursion.
         tol (float, optional): The torlerence for each defletion step. Defaults to 1e-15.
+        return_singularV_of_B (bool): If this is true, return eigenvalues of A; otherwise return 
+            singular values of B.
     Returns:
         T (np.ndarray): An 1d array that contains the eigenvalues of A in descending order.
         Q (np.ndarray): A 2d array (matrix) that contains the corresponding eigenvectors as columns.
@@ -218,7 +230,10 @@ def eigh_of_BBT_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-
 
     if start_flag:
         idx = np.argsort(T)[::-1][:n]
-        return T[idx], Q[:, idx]
+        if return_singularV_of_B:
+            return T[idx], Q[:, idx]
+        else:
+            return T[idx]**2, Q[:, idx]
 
 
 def eigh_by_QR_optional(A: np.ndarray, Q=None, T=None, start_flag=True, shift=Wilkinson_Shift, tol=1e-8) -> tuple[np.ndarray, np.ndarray]:
