@@ -46,7 +46,7 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, tol=1e-8, maxn=100, overwri
 
     Q = np.identity(n)
     T = np.empty(n)
-    for i in range(n, 1, -1):
+    for i in range(n, 0, -1):
         flag_explode = True
         for k in range(maxn):
             sigma = shift(X[:i, :i])
