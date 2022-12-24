@@ -12,6 +12,8 @@ def Rayleigh_Quotient_Shift(A: np.ndarray) -> int:
 
 
 def Wilkinson_Shift(A: np.ndarray) -> int:
+    if A.shape[0] == 1:
+        return A[0, 0]
     T = A[-2, -2] + A[-1, -1]
     D = A[-2, -2]*A[-1, -1] - A[-1, -2]*A[-2, -1]
     e1 = T/2 + (T**2/4 - D)**.5
@@ -68,7 +70,6 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, tol=1e-8, maxn=100, overwri
         if flag_explode:
             print(k, norm(X[-1, :-1], ord=1))
             print("Max iter warning!")
-    T[0] = X[0, 0]
 
     idx = np.argsort(T)[::-1][:n]
     return T[idx], Q[:, idx]
