@@ -49,7 +49,7 @@ def generate_gaussian_T(n,k):
     Returns:
         A n x n floating point ndarray whose values are sampled from the multivariate gaussian.
     """
-    T = np.diag([3/8]*n, 0)+np.diag([1/4]*(n-1), 1)+np.diag([1/4]*(n-1), -1)+np.diag([1/16]*(n-2), 2)+np.diag([1/16]*(n-2), -2)
+    T = np.diag([3.1/8.1]*n, 0)+np.diag([1/4.1]*(n-1), 1)+np.diag([1/4.1]*(n-1), -1)+np.diag([1/16.1]*(n-2), 2)+np.diag([1/16.1]*(n-2), -2)
     T_k = np.linalg.matrix_power(T,k)
     return T_k
 
@@ -66,7 +66,7 @@ def generate_box_T(n,k):
     Returns:
         A n x n floating point ndarray whose values are sampled.
     """
-    T = np.diag([1/3]*n, 0)+np.diag([1/3]*(n-1), 1)+np.diag([1/3]*(n-1), -1)
+    T = np.diag([1.1/3.1]*n, 0)+np.diag([1/3.1]*(n-1), 1)+np.diag([1/3.1]*(n-1), -1)
     T_k = np.linalg.matrix_power(T,k)
     return T_k
 
@@ -128,26 +128,27 @@ def truncated_inverse(matr,trunc,svd_type):
         matr(2d array):           The matrix needed to be calculate inverse.
         trunc(int)                The range used to calculate the truncated inverse.               
         svd_type(int):            The svd method we use to do the svd decomposition.
-                                    0 refers to the Scipy svd decomposition;
-                                    1 refers to the method in problem1 phaseI and IIA;
-                                    2 referse to the method in porblem1 phaseI and IIB;
-
+                                    A refers to the method in problem1 phaseI and IIA;
+                                    B1 refers to the method in porblem1 phaseI and IIB;
+                                    B2 refers to the method in porblem1 phaseI and IIB with optional;
+                                    C refers to the method in porblem1 phaseI and IIB with optional;
 
     Returns:
         The truncated inverse; the time used for the svd decomposition
     """
-    if svd_type == 0:
+    if svd_type == 'scipy':
         begin = time.time()
         u,sigma,v = scipy.linalg.svd(matr)
         time_used = time.time()-begin
-    if svd_type == 1:
+    else:
         begin = time.time()
-        u,sigma,v = SVD.svd(matr)
+        u,sigma,v = SVD.svd(matr,phaseII =svd_type)
         time_used = time.time()-begin
     v = v.T
     size = matr.shape[0]
     A = np.zeros((size,size))
-    for i in range(0,trunc):
+    truncation = min(trunc,u.shape[1])
+    for i in range(0,truncation):
         A += (np.outer(v[:,i],u[:,i])/sigma[i])
     return A,time_used
 
@@ -162,12 +163,12 @@ def deblur_picture(blur_kernel,blur_data,trunc,svd_type):
 
         trunc(list[int,int])                The list of range used to calculate the truncated inverse.           
                                             First one refers to the truncaion used for left blur matrix and second one refers to truncation used for the right blur matrix.    
-        svd_type(list[int,int]):            The svd method we use to do the svd decomposition.
+       svd_type(list[str,str]):            The svd method we use to do the svd decomposition.
                                             First one refers to the svd decomposition used for left blur matrix and second one refers to svd decomposition used for the right blur matrix.    
-                                            0 refers to the Scipy svd decomposition;
-                                            1 refers to the method in problem1 phaseI and IIA;
-                                            2 referse to the method in porblem1 phaseI and IIB;
-
+                                            scipy refers to the Scipy svd decomposition;
+                                            A refers to the method in problem1 phaseI and IIA;
+                                            B1 referse to the method in porblem1 phaseI and IIB;
+                                            B2 referse to the method in porblem1 phaseI and IIB with optional;
 
     Returns:
         The deblur data; the average peak-signal-to-noise ratiol; the time used for the svd decomposition
@@ -182,13 +183,18 @@ def deblur_picture(blur_kernel,blur_data,trunc,svd_type):
         deblur_data[:,:,i]= A_l@blur_data[:,:,i]@A_r
         norm_deblur = np.linalg.norm(deblur_data[:,:,i],'fro')
         psnr.append(10*np.log10(m**2/norm_deblur**2)) 
-    print(psnr) 
     return deblur_data,np.array(psnr).mean(),time_svd
 
 
-def singular_drawing(matr):
+def singular_drawing(matr,svd_type):
     """
     Draw the plot of singular values of a matrix.
     """
-    u,sigma,v = SVD.svd(matr)
-    plt.plot(sigma)
+    legend = ['l_blur_kernel','r_blur_kernel']
+    for j in matr:
+        for i in svd_type:
+            u,sigma,v = SVD.svd(j,i)
+            plt.plot(sigma)
+        #u0,sigma0,v0 = scipy.linalg.svd(j)
+        #plt.plot(sigma0)
+        plt.legend([legend[0],legend[1]])
