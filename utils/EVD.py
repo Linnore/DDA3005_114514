@@ -26,7 +26,7 @@ def zero_Shift(A):
 
 
 def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, tol=1e-8, maxn=100, overwrite_A=False):
-    """This function applies the QR algorithm with deflation on the symmetric matrix A
+    """This function applies the QR algorithm with deflation on the symmetric tridiagonal matrix A
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
     Args:
@@ -215,6 +215,65 @@ def eigh_of_BBT_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-
         del R_k
         X = L
         applyGivenses(Q, givens_ck, givens_sk)
+
+    if start_flag:
+        idx = np.argsort(T)[::-1][:n]
+        return T[idx], Q[:, idx]
+
+
+def eigh_by_QR_optional(A: np.ndarray, Q=None, T=None, start_flag=True, shift=Wilkinson_Shift, tol=1e-8) -> tuple[np.ndarray, np.ndarray]:
+    """This function applies the enhanced QR algorithm with deflation and Divide&Conquer on tridiagonal matrix A = B@B.T
+    to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
+    and T is the diagonal matrix containing the corresponding eigenvalues.
+    Args:
+        A (np.ndarray): The matrix of interest. Note that it must be real and symmetrix.
+        shift (function): Given the matrix A, shift(A) return an estimate of one eigenvalue as the shift.
+        start_flag (bool): If start_flag is true, it means this function is called externally; 
+            otherwise, it is called internally as recursion.
+        tol (float, optional): The torlerence for each defletion step. Defaults to 1e-15.
+    Returns:
+        T (np.ndarray): An 1d array that contains the eigenvalues of A in descending order.
+        Q (np.ndarray): A 2d array (matrix) that contains the corresponding eigenvectors as columns.
+    """
+    n = A.shape[1]
+    if n == 1:
+        Q[0, 0] = 1
+        T[0] = A[0, 0]
+        return
+    X = A
+    if start_flag:
+        Q = np.identity(n)
+        T = np.zeros(n)
+    while True:
+        upper_diag_abs = np.abs(np.diag(X, 1))
+        min_index = np.argmin(upper_diag_abs)
+
+        if upper_diag_abs[min_index] <= tol:
+            if min_index > 0:
+                eigh_by_QR_optional(
+                    X[:min_index, :min_index],
+                    Q[:, :min_index],
+                    T=T[:min_index], start_flag=False)
+
+            T[min_index] = X[min_index, min_index]
+            if min_index < n-1:
+                eigh_by_QR_optional(
+                    X[min_index+1:, min_index+1:],
+                    Q[:, min_index+1:],
+                    T=T[min_index+1:], start_flag=False)
+            break
+
+        sigma = shift(X)
+        np.fill_diagonal(X, X.diagonal() - sigma)
+
+        # The following 3 lines are same as: X=QR; X=RQ.
+        givens_ci, givens_si, Ri = qr_tridiagonal_by_Givens(
+            X, return_Givens=True)
+        applyGivenses(Ri, givens_ci, givens_si, axis=1)
+        X = Ri
+
+        np.fill_diagonal(X, X.diagonal() + sigma)
+        applyGivenses(Q, givens_ci, givens_si)
 
     if start_flag:
         idx = np.argsort(T)[::-1][:n]
