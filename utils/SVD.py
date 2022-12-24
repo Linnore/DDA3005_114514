@@ -2,11 +2,11 @@
 """
 
 import numpy as np
+import scipy
 from .QR_Factorization import HouseHolder, HouseHolder_update
 from .EVD import *
 from .Bidiagonal_fastMult import *
 from time import time
-
 
 def svd_phaseI(A: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """This function implement the Golub-Kahan bidiagonalization to reduce the matrix A to bidiagonal form B,
@@ -153,7 +153,9 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     else:
         return U, S, Vt
 
-def accuracy_test(U, S, Vt, ref_sv, acc=1e-8):    
+def accuracy_test(A, U, S, Vt, acc=1e-8): 
+    _, ref_sv, _ = scipy.linalg.svd(A)   
+    m, n = A.shape
     print("Percentage of entrices successfully recovered by SVD with accuracy: {}".format(acc))
     print(np.sum(np.abs(U@np.diag(S)@Vt - A)< acc) / (n*m) * 100, "%")
 
