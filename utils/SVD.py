@@ -107,7 +107,7 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
     return U, sigma, Vt
 
 
-def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR, timed=False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """This function compute the economic SVD of a real matrix A.
 
     Args:
@@ -152,9 +152,15 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR) -> tuple[np.ndarray,
     print("phaseII: {:.4f}s".format(p2_end - p2_begin))
 
     if flipped:
-        return Vt.T, S, U.T
+        if timed:
+            return U, S, Vt, p1_end - p1_begin, p2_end - p2_begin
+        else:
+            return U, S, Vt
     else:
-        return U, S, Vt
+        if timed:
+            return Vt.T, S, U.T, p1_end - p1_begin, p2_end - p2_begin
+        else:
+            return Vt.T, S, U.T
 
 def accuracy_test(A, U, S, Vt, acc=1e-8): 
     _, ref_sv, _ = scipy.linalg.svd(A)   
@@ -167,6 +173,10 @@ def accuracy_test(A, U, S, Vt, acc=1e-8):
 
     print("Max error of singular values:")
     print(np.abs(ref_sv[:S.size] - S).max())
+    
+    return (np.sum(np.abs(U@np.diag(S)@Vt - A)< acc) / (n*m) * 100, \
+            np.sum(np.abs(S - ref_sv[:S.size])< acc) / S.size * 100, \
+            np.abs(ref_sv[:S.size] - S).max())
 
 def is_orthogonal(A, tol=1e-4, silence=True):
     m = A.shape[0]
