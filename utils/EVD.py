@@ -2,11 +2,9 @@ import numpy as np
 from scipy.linalg import norm
 from scipy.linalg import cholesky_banded
 from scipy.linalg import cholesky
-import numpy
 
 from .Bidiagonal_fastMult import upper_fastMult_lower_bidiagonal
 from .QR_Factorization import applyGivenses, qr_tridiagonal_by_Givens, qr_lower_bidiagonal_by_Givens
-from .SVD import is_orthogonal
 
 def Rayleigh_Quotient_Shift(A: np.ndarray) -> int:
     return A[-1, -1]
