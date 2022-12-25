@@ -105,25 +105,35 @@ def eigh_of_BBT(B: np.ndarray, tol=1e-8, return_singularV_of_B=True) -> tuple[np
     X = B
     Q = np.identity(n)
     T = np.empty(n)
+    i = 0
+    j = B.shape[1]
+    begin = 0
+    end = X.shape[0]
+
     while True:
-        if n == 1:
-            T[0] = X[0, 0]
+        if j-i < 1:
             break
-        givens_ck, givens_sk, R_k = qr_lower_bidiagonal_by_Givens(
-            X[:n, :n], return_Givens=True)
-        if n <= 4:
-            L = cholesky(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
-        else:
-            ab = diagonal_form(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
-            L = matrix_form(cholesky_banded(ab))
+        elif j-i == 1:
+            T[i] = X[0, 0]
+            break
+        Q_k, R_k = qr_lower_bidiagonal_by_Givens(X[begin:end, begin:end].T, return_Givens=False)
+        Q[:, i:j] = Q[:, i:j] @ Q_k
+        # The following 1 line is same as Q = Q@Qi. Using it will cause bug.
+        """ givens_ck, givens_sk, R_k = qr_lower_bidiagonal_by_Givens(X[begin:end, begin:end].T, return_Givens=True)
+        applyGivenses(Q[:, i:j], givens_ck, givens_sk) """
+        ab = diagonal_form(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
+        L = matrix_form(cholesky_banded(ab))
         X = L
-
-        # The following 1 line is same as Q = Q@Qi.
-        applyGivenses(Q[:n, :n], givens_ck, givens_sk)
-
-        if np.abs(X[n-2, n-1]) <= tol:
-            T[n-1] = X[n-1, n-1]
-            n -= 1
+        begin = 0
+        end = X.shape[0]
+        if np.abs(X[0, 1]) <= tol:
+            T[i] = X[0, 0]
+            i += 1
+            begin = 1
+        if np.abs(X[-2, -1]) <= tol:
+            T[j-1] = X[-1, -1]
+            j -= 1
+            end = -1
     idx = np.argsort(T)[::-1][:B.shape[0]]
     if return_singularV_of_B:
         return T[idx], Q[:, idx]

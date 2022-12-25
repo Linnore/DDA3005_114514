@@ -87,20 +87,23 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
     B = B[:, B_nonzero_idx]
     Qt = Qt[B_nonzero_idx]
     P = P[:, B_nonzero_idx]
-
-    # Eigen decomposition of B@B' = G @ T @ G'
-    # B = GTS'; G'B = TS'
+    # B = Qt @ A @ P, A = Q @ B @ P'
+    # Eigen decomposition of B'@B = G @ T @ G' = G @ sigma @ sigma @ G'
+    # B = G @ sigma @ S'; G'@ B = sigma @ S'
     if phaseII == "A":
-        T, G = eigen(upper_fastMult_lower_bidiagonal(B, B.T))
+        T, G = eigen(fastMult_upper_bidiagonal(B.T, B))
         sigma = T**.5
     else:
         sigma, G = eigen(B, return_singularV_of_B=True)
-
+        S = (fastMult_upper_bidiagonal(B, G))/sigma
+        U = Qt.T @ S.T
+        Vt = G @ P.T
     # sigma = T**.5
-    S = (fastMult_upper_bidiagonal(G.T, B)).T/sigma
-
-    U = Qt.T @ G
-    Vt = S.T @ P.T
+    S = (fastMult_upper_bidiagonal(B, G))/sigma
+    """ U = Qt.T @ S.T
+    Vt = G @ P.T """
+    Vt = G.T @ P.T
+    U = Qt.T @ B @ P.T @ Vt.T / sigma
     return U, sigma, Vt
 
 
