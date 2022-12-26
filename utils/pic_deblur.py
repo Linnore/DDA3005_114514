@@ -159,7 +159,7 @@ def truncated_inverse(matr,trunc,svd_type):
         A += (np.outer(v[:,i],u[:,i])/sigma[i])
     return A,time_used
 
-def deblur_picture(blur_kernel,blur_data,trunc,svd_type):
+def deblur_picture(blur_kernel,blur_data,trunc,svd_type,original_data):
     """
     Reconstrunct the original image data from the blur data and blur kernel using truncated SVD.
 
@@ -170,13 +170,14 @@ def deblur_picture(blur_kernel,blur_data,trunc,svd_type):
 
         trunc(list[int,int])                The list of range used to calculate the truncated inverse.           
                                             First one refers to the truncaion used for left blur matrix and second one refers to truncation used for the right blur matrix.    
-       svd_type(list[str,str]):            The svd method we use to do the svd decomposition.
+        svd_type(list[str,str]):            The svd method we use to do the svd decomposition.
                                             First one refers to the svd decomposition used for left blur matrix and second one refers to svd decomposition used for the right blur matrix.    
                                             scipy refers to the Scipy svd decomposition;
                                             A refers to the method in problem1 phaseI and IIA;
                                             B1 referse to the method in porblem1 phaseI and IIB;
-                                            B2 referse to the method in porblem1 phaseI and IIB with optional;
 
+        original_data(3d array):            The original image data.
+                                            
     Returns:
         The deblur data; the average peak-signal-to-noise ratiol; the time used for the svd decomposition
     """
@@ -187,20 +188,20 @@ def deblur_picture(blur_kernel,blur_data,trunc,svd_type):
         m,n = blur_data.shape
         deblur_data = np.zeros((m,n))
     psnr = []
-    A_l,time_l = truncated_inverse(blur_kernel[0],trunc,svd_type[0])
-    A_r,time_r = truncated_inverse(blur_kernel[1],trunc,svd_type[1])
+    A_l,time_l = truncated_inverse(blur_kernel[0],trunc[0],svd_type[0])
+    A_r,time_r = truncated_inverse(blur_kernel[1],trunc[1],svd_type[1])
     time_svd = [time_l,time_r]
 
     try:
         for i in range(k):
             deblur_data[:,:,i]= A_l@blur_data[:,:,i]@A_r
-            norm_deblur = np.linalg.norm(deblur_data[:,:,i],'fro')
+            norm_deblur = np.linalg.norm(deblur_data[:,:,i]-original_data[:,:,i],'fro')
             psnr.append(10*np.log10(m**2/norm_deblur**2)) 
     except:
         deblur_data = A_l@blur_data@A_r
-        norm_deblur = np.linalg.norm(deblur_data,'fro')
+        norm_deblur = np.linalg.norm(deblur_data-original_data,'fro')
         psnr.append(10*np.log10(m**2/norm_deblur**2)) 
-        
+
     return deblur_data,np.array(psnr).mean(),time_svd
 
 
@@ -208,11 +209,9 @@ def singular_drawing(matr,svd_type):
     """
     Draw the plot of singular values of a matrix.
     """
-    legend = ['l_blur_kernel','r_blur_kernel']
-    for j in matr:
-        for i in svd_type:
-            u,sigma,v = SVD.svd(j,i)
-            plt.plot(sigma)
-        #u0,sigma0,v0 = scipy.linalg.svd(j)
-        #plt.plot(sigma0)
-        plt.legend([legend[0],legend[1]])
+    singular = np.zeros(matr.shape[0])
+    u,sigma,v = SVD.svd(matr,svd_type)
+    singular[:sigma.shape[0]] = sigma
+    plt.plot(singular)
+    plt.title('Singular values')
+    
