@@ -112,12 +112,19 @@ def blur_picture(original_data,blur_type,power):
     Returns:
         The list of left and right blurring matirx, blurring image data. 
     """
-    m,n,k = original_data.shape
-    blur_data = np.zeros((m,n,k))
+    try:
+        m,n,k = original_data.shape
+        blur_data = np.zeros((m,n,k))
+    except:
+        m,n = original_data.shape
+        blur_data = np.zeros((m,n))
     blur_kernel_l = generate_T(m,blur_type[0],power[0])
     blur_kernel_r = generate_T(m,blur_type[1],power[1])
-    for i in range(k):
-        blur_data[:,:,i]= blur_kernel_l@original_data[:,:,i]@blur_kernel_r
+    try:
+        for i in range(k):
+            blur_data[:,:,i]= blur_kernel_l@original_data[:,:,i]@blur_kernel_r
+    except:
+        blur_data = blur_kernel_l@original_data@blur_kernel_r
     return [blur_kernel_l,blur_kernel_r],blur_data
 
 def truncated_inverse(matr,trunc,svd_type):
@@ -173,16 +180,27 @@ def deblur_picture(blur_kernel,blur_data,trunc,svd_type):
     Returns:
         The deblur data; the average peak-signal-to-noise ratiol; the time used for the svd decomposition
     """
-    m,n,k = blur_data.shape
+    try:
+        m,n,k = blur_data.shape
+        deblur_data = np.zeros((m,n,k))
+    except:
+        m,n = blur_data.shape
+        deblur_data = np.zeros((m,n))
     psnr = []
-    deblur_data = np.zeros((m,n,k))
     A_l,time_l = truncated_inverse(blur_kernel[0],trunc,svd_type[0])
     A_r,time_r = truncated_inverse(blur_kernel[1],trunc,svd_type[1])
     time_svd = [time_l,time_r]
-    for i in range(k):
-        deblur_data[:,:,i]= A_l@blur_data[:,:,i]@A_r
-        norm_deblur = np.linalg.norm(deblur_data[:,:,i],'fro')
+
+    try:
+        for i in range(k):
+            deblur_data[:,:,i]= A_l@blur_data[:,:,i]@A_r
+            norm_deblur = np.linalg.norm(deblur_data[:,:,i],'fro')
+            psnr.append(10*np.log10(m**2/norm_deblur**2)) 
+    except:
+        deblur_data = A_l@blur_data@A_r
+        norm_deblur = np.linalg.norm(deblur_data,'fro')
         psnr.append(10*np.log10(m**2/norm_deblur**2)) 
+        
     return deblur_data,np.array(psnr).mean(),time_svd
 
 

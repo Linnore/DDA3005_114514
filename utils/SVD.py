@@ -153,14 +153,14 @@ def svd(A: np.ndarray, phaseII='Default', eigen=eigh_by_QR, timed=False) -> tupl
 
     if flipped:
         if timed:
-            return U, S, Vt, p1_end - p1_begin, p2_end - p2_begin
-        else:
-            return U, S, Vt
-    else:
-        if timed:
             return Vt.T, S, U.T, p1_end - p1_begin, p2_end - p2_begin
         else:
             return Vt.T, S, U.T
+    else:
+        if timed:
+            return U, S, Vt, p1_end - p1_begin, p2_end - p2_begin
+        else:
+            return U, S, Vt
 
 def accuracy_test(A, U, S, Vt, acc=1e-8): 
     _, ref_sv, _ = scipy.linalg.svd(A)   
