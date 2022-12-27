@@ -98,10 +98,8 @@ def svd_phaseII(B: np.ndarray, Qt: np.ndarray, P: np.ndarray, phaseII: str, eige
         S = (fastMult_upper_bidiagonal(B, G))/sigma
         U = Qt.T @ S.T
         Vt = G @ P.T
-    # sigma = T**.5
+        
     S = (fastMult_upper_bidiagonal(B, G))/sigma
-    """ U = Qt.T @ S.T
-    Vt = G @ P.T """
     Vt = G.T @ P.T
     U = Qt.T @ B @ P.T @ Vt.T / sigma
     return U, sigma, Vt

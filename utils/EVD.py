@@ -51,10 +51,6 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, tol=1e-8, maxn=100, overwri
             sigma = shift(X[:i, :i])
             np.fill_diagonal(X[:i, :i], X[:i, :i].diagonal() - sigma)
 
-            # Qi, Ri = qr_tridiagonal_by_Givens(X[:i, :i])
-            # X[:i, :i] = Ri @ Qi
-            # Q[:, :i] = Q[:, :i] @ Qi
-
             # The following 3 lines are same as: X=QR; X=RQ.
             givens_ci, givens_si, Ri = qr_tridiagonal_by_Givens(
                 X[:i, :i], return_Givens=True)
@@ -62,14 +58,6 @@ def eigh_by_QR(A: np.ndarray, shift=Wilkinson_Shift, tol=1e-8, maxn=100, overwri
             X[:i, :i] = Ri
 
             # The following 1 line is same as Q = Q@Qi.
-
-            # tmp = np.identity(Qi.shape[0])
-            # applyGivenses(tmp, givens_ci, givens_si, axis=1)
-            # print(givens_ci.shape)
-            # print(is_orthogonal(tmp))
-            # print(norm(tmp-Qi))
-
-
             applyGivenses(Q[:, :i], givens_ci, givens_si, axis=1)
 
             np.fill_diagonal(X[:i, :i], X[:i, :i].diagonal() + sigma)
@@ -129,9 +117,6 @@ def eigh_of_BTB(B: np.ndarray, tol=1e-8, return_singularV_of_B=True) -> tuple[np
             break
         Q_k, R_k = qr_lower_bidiagonal_by_Givens(X[begin:end, begin:end].T, return_Givens=False)
         Q[:, i:j] = Q[:, i:j] @ Q_k
-        # The following 1 line is same as Q = Q@Qi. Using it will cause bug.
-        """ givens_ck, givens_sk, R_k = qr_lower_bidiagonal_by_Givens(X[begin:end, begin:end].T, return_Givens=True)
-        applyGivenses(Q[:, i:j], givens_ck, givens_sk) """
         ab = diagonal_form(upper_fastMult_lower_bidiagonal(R_k, R_k.T))
         L = matrix_form(cholesky_banded(ab))
         X = L
