@@ -98,7 +98,7 @@ def matrix_form(a):
     return np.diag(a[2, :], k=0) + np.diag(a[1, 1:], k=1)+np.diag(a[0, 2:], k=2)
 
 
-def eigh_of_BBT(B: np.ndarray, tol=1e-8, return_singularV_of_B=True) -> tuple[np.ndarray, np.ndarray]:
+def eigh_of_BTB(B: np.ndarray, tol=1e-8, return_singularV_of_B=True) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B@B.T
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
@@ -152,7 +152,7 @@ def eigh_of_BBT(B: np.ndarray, tol=1e-8, return_singularV_of_B=True) -> tuple[np
         return T[idx]**2, Q[:, idx]
 
 
-def eigh_of_BBT_cheat(B: np.ndarray, return_singularV_of_B=True) -> tuple[np.ndarray, np.ndarray]:
+def eigh_of_BTB_cheat(B: np.ndarray, return_singularV_of_B=True) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B@B.T
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
@@ -195,7 +195,7 @@ def eigh_of_BBT_cheat(B: np.ndarray, return_singularV_of_B=True) -> tuple[np.nda
         return T[idx]**2, Q[:, idx]
 
 
-def eigh_of_BBT_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-8, return_singularV_of_B=True) -> tuple[np.ndarray, np.ndarray]:
+def eigh_of_BTB_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-8, return_singularV_of_B=True) -> tuple[np.ndarray, np.ndarray]:
     """This function applies the enhanced QR algorithm with deflation on tridiagonal matrix A = B@B.T
     to compute its eigenvalue decomposition A = Q@T@Q', where Q contains the eigenvectors
     and T is the diagonal matrix containing the corresponding eigenvalues.
@@ -225,14 +225,14 @@ def eigh_of_BBT_optional(B: np.ndarray, Q=None, T=None, start_flag=True, tol=1e-
 
         if upper_diag_abs[min_index] <= tol:
             if min_index > 0:
-                eigh_of_BBT_optional(
+                eigh_of_BTB_optional(
                     X[:min_index, :min_index],
                     Q[:min_index, :min_index],
                     T=T[:min_index], start_flag=False)
 
             T[min_index] = X[min_index, min_index]
             if min_index < n-1:
-                eigh_of_BBT_optional(
+                eigh_of_BTB_optional(
                     X[min_index+1:, min_index+1:],
                     Q[min_index+1:, min_index+1:],
                     T=T[min_index+1:], start_flag=False)
