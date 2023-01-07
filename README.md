@@ -3,7 +3,7 @@
 ## To initialize this repo:
 git clone https://github.com/Linnore/DDA3005_114514.git
 
-Size of this repo: ~339 KB.
+Size of this repo: ~339 KB (excluding the report).
 
 ## Pipeline
 *.ipynb
